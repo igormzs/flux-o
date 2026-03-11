@@ -42,7 +42,7 @@ const Insights = () => {
   const insight = useMemo(() => {
     if (thisMonth.length === 0 || lastMonth.length === 0) return null;
     let biggestDiff = -Infinity;
-    let biggestCat = CATEGORIES[0];
+    let biggestCat: typeof CATEGORIES[number] = CATEGORIES[0];
     for (const cat of CATEGORIES) {
       const thisTotal = thisMonth.filter((e) => e.category === cat.id).reduce((s, e) => s + e.amount, 0);
       const lastTotal = lastMonth.filter((e) => e.category === cat.id).reduce((s, e) => s + e.amount, 0);
