@@ -4,15 +4,15 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts
 import { getExpenses, CATEGORIES, Expense } from "@/lib/storage";
 import { subMonths, format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 
-const CHART_COLORS: Record<string, string> = {
-  mint: "hsl(160, 60%, 60%)",
-  teal: "hsl(180, 50%, 55%)",
-  lavender: "hsl(260, 50%, 70%)",
-  electric: "hsl(210, 90%, 65%)",
-  pink: "hsl(330, 70%, 70%)",
-  yellow: "hsl(45, 90%, 65%)",
-  peach: "hsl(25, 80%, 70%)",
-  coral: "hsl(10, 75%, 65%)",
+const GRADIENT_COLORS: Record<string, { from: string; to: string }> = {
+  mint: { from: "#4dd8a5", to: "#2ec4a0" },
+  teal: { from: "#4db8b0", to: "#3aa89e" },
+  lavender: { from: "#a78bfa", to: "#8b6fdb" },
+  electric: { from: "#5ba3f5", to: "#4a8ae8" },
+  pink: { from: "#f472b6", to: "#e05599" },
+  yellow: { from: "#fbbf24", to: "#f5a623" },
+  peach: { from: "#f4a574", to: "#e88d5a" },
+  coral: { from: "#ef7564", to: "#e05e4d" },
 };
 
 function getMonthExpenses(expenses: Expense[], monthsAgo: number) {
@@ -152,7 +152,7 @@ const Insights = () => {
                       animate={{ width: `${pct}%` }}
                       transition={{ duration: 0.6, delay: 0.3 }}
                       className="h-full rounded-full"
-                      style={{ backgroundColor: CHART_COLORS[cat.color] }}
+                      style={{ background: `linear-gradient(90deg, ${GRADIENT_COLORS[cat.color]?.from}, ${GRADIENT_COLORS[cat.color]?.to})` }}
                     />
                   </div>
                 </div>
