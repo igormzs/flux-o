@@ -152,7 +152,7 @@ const Insights = () => {
                       animate={{ width: `${pct}%` }}
                       transition={{ duration: 0.6, delay: 0.3 }}
                       className="h-full rounded-full"
-                      style={{ backgroundColor: CHART_COLORS[cat.color] }}
+                      style={{ background: `linear-gradient(90deg, ${GRADIENT_COLORS[cat.color]?.from}, ${GRADIENT_COLORS[cat.color]?.to})` }}
                     />
                   </div>
                 </div>
