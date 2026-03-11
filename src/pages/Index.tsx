@@ -32,11 +32,11 @@ const Dashboard = () => {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex items-center justify-between mb-6"
-      >
+        className="flex items-center justify-between mb-6">
+        
         <div>
           <p className="text-muted-foreground text-sm">Welcome back 👋</p>
-          <h2 className="font-display font-bold text-xl text-foreground">Fluxo</h2>
+          <h2 className="font-display font-bold text-xl text-foreground">Flux-o</h2>
         </div>
         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-mint to-lavender" />
       </motion.div>
@@ -54,22 +54,22 @@ const Dashboard = () => {
       {/* Recent Transactions */}
       <div className="mb-6">
         <h3 className="font-display font-bold text-foreground mb-3">Recent</h3>
-        {expenses.length === 0 ? (
-          <div className="glass-card p-6 text-center">
+        {expenses.length === 0 ?
+        <div className="glass-card p-6 text-center">
             <p className="text-muted-foreground text-sm">No expenses yet. Tap + to add one!</p>
+          </div> :
+
+        <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-none -mx-4 px-4">
+            {expenses.slice(0, 10).map((exp, i) =>
+          <TransactionCard
+            key={exp.id}
+            expense={exp}
+            index={i}
+            onDelete={handleDelete} />
+
+          )}
           </div>
-        ) : (
-          <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-none -mx-4 px-4">
-            {expenses.slice(0, 10).map((exp, i) => (
-              <TransactionCard
-                key={exp.id}
-                expense={exp}
-                index={i}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
-        )}
+        }
       </div>
 
       {/* FAB */}
@@ -77,18 +77,18 @@ const Dashboard = () => {
         whileTap={{ scale: 0.85 }}
         whileHover={{ scale: 1.05 }}
         onClick={() => setShowAdd(true)}
-        className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center z-40"
-      >
+        className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center z-40">
+        
         <Plus size={24} strokeWidth={2.5} />
       </motion.button>
 
       <AddExpenseSheet
         open={showAdd}
         onClose={() => setShowAdd(false)}
-        onAdded={refresh}
-      />
-    </div>
-  );
+        onAdded={refresh} />
+      
+    </div>);
+
 };
 
 export default Dashboard;
