@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { motion, AnimatePresence } from "framer-motion";
 import { Expense, CATEGORIES } from "@/lib/storage";
 import CategoryExpensesSheet from "./CategoryExpensesSheet";
+import CategoryIcon from "./CategoryIcon";
 
 type ChartType = "donut" | "bar" | "progress";
 
