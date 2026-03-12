@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Expense, CATEGORIES } from "@/lib/storage";
 import CategoryExpensesSheet from "./CategoryExpensesSheet";
 import CategoryIcon from "./CategoryIcon";
+import { ChartDonut, ChartBar, TrendUp } from "@phosphor-icons/react";
 
 type ChartType = "donut" | "bar" | "progress";
 
@@ -48,10 +49,10 @@ const SpendingChart = ({ expenses }: SpendingChartProps) => {
   const total = grouped.reduce((s, d) => s + d.value, 0);
   const maxValue = Math.max(...grouped.map((d) => d.value));
 
-  const chartTypes: { key: ChartType; label: string }[] = [
-    { key: "donut", label: "🍩" },
-    { key: "bar", label: "📊" },
-    { key: "progress", label: "📈" },
+  const chartTypes: { key: ChartType; icon: React.ReactNode }[] = [
+    { key: "donut", icon: <ChartDonut size={16} weight="duotone" /> },
+    { key: "bar", icon: <ChartBar size={16} weight="duotone" /> },
+    { key: "progress", icon: <TrendUp size={16} weight="duotone" /> },
   ];
 
   const handleCategoryClick = (categoryId: string) => {
@@ -79,7 +80,7 @@ const SpendingChart = ({ expenses }: SpendingChartProps) => {
                     : "hover:bg-muted"
                 }`}
               >
-                {ct.label}
+                {ct.icon}
               </button>
             ))}
           </div>
@@ -167,11 +168,11 @@ const SpendingChart = ({ expenses }: SpendingChartProps) => {
                   <XAxis type="number" hide />
                   <YAxis
                     type="category"
-                    dataKey="emoji"
-                    tick={{ fontSize: 16 }}
+                    dataKey="name"
+                    tick={{ fontSize: 11, fill: "hsl(240, 5%, 55%)" }}
                     axisLine={false}
                     tickLine={false}
-                    width={30}
+                    width={50}
                   />
                   <Tooltip
                     cursor={false}
