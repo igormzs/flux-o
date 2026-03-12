@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { Expense, getCategoryById } from "@/lib/storage";
 import { format } from "date-fns";
+import CategoryIcon from "./CategoryIcon";
 
 interface CategoryExpensesSheetProps {
   open: boolean;
