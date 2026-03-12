@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
 import { Expense, getCategoryById } from "@/lib/storage";
 import { format } from "date-fns";
+import CategoryIcon from "./CategoryIcon";
 
 interface TransactionCardProps {
   expense: Expense;
