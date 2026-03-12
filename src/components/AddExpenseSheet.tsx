@@ -108,7 +108,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
                         : colorBgMap[cat.color]
                     }`}
                   >
-                    <span className="text-xl">{cat.emoji}</span>
+                    <CategoryIcon categoryId={cat.id} size={24} />
                     <span className="text-[10px] font-medium">{cat.label}</span>
                   </button>
                 ))}

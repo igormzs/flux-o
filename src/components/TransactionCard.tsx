@@ -36,7 +36,7 @@ const TransactionCard = ({ expense, index, onDelete }: TransactionCardProps) => 
           colorMap[cat?.color ?? "mint"]
         }`}
       >
-        {cat?.emoji ?? "💰"}
+        <CategoryIcon categoryId={expense.category} size={22} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-medium text-foreground text-sm truncate">

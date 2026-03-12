@@ -40,7 +40,7 @@ const CategoryExpensesSheet = ({ open, onClose, categoryId, expenses }: Category
           >
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{cat.emoji}</span>
+                <CategoryIcon categoryId={categoryId} size={28} />
                 <div>
                   <h2 className="font-display font-bold text-lg text-foreground">{cat.label}</h2>
                   <p className="text-sm text-muted-foreground">{filtered.length} expenses · ${total.toFixed(2)}</p>
