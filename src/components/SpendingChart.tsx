@@ -48,10 +48,10 @@ const SpendingChart = ({ expenses }: SpendingChartProps) => {
   const total = grouped.reduce((s, d) => s + d.value, 0);
   const maxValue = Math.max(...grouped.map((d) => d.value));
 
-  const chartTypes: { key: ChartType; label: string }[] = [
-    { key: "donut", label: "🍩" },
-    { key: "bar", label: "📊" },
-    { key: "progress", label: "📈" },
+  const chartTypes: { key: ChartType; icon: React.ReactNode }[] = [
+    { key: "donut", icon: <ChartDonut size={16} weight="duotone" /> },
+    { key: "bar", icon: <ChartBar size={16} weight="duotone" /> },
+    { key: "progress", icon: <TrendUp size={16} weight="duotone" /> },
   ];
 
   const handleCategoryClick = (categoryId: string) => {
