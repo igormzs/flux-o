@@ -180,7 +180,7 @@ const SpendingChart = ({ expenses }: SpendingChartProps) => {
                       const d = payload[0].payload;
                       return (
                         <div className="bg-card border border-glass-border rounded-xl px-3 py-2 text-xs shadow-xl">
-                          <span className="font-medium text-foreground">{d.emoji} {d.name}: ${d.value.toFixed(2)}</span>
+                          <span className="font-medium text-foreground">{d.name}: ${d.value.toFixed(2)}</span>
                         </div>
                       );
                     }}
