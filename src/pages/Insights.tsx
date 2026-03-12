@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { getExpenses, CATEGORIES, Expense } from "@/lib/storage";
 import { subMonths, format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import CategoryIcon from "@/components/CategoryIcon";
 
 const GRADIENT_COLORS: Record<string, { from: string; to: string }> = {
   mint: { from: "#4dd8a5", to: "#2ec4a0" },
