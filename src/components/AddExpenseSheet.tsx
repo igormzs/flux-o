@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { CATEGORIES, saveExpense, CategoryId } from "@/lib/storage";
+import CategoryIcon from "./CategoryIcon";
 
 const colorBgMap: Record<string, string> = {
   mint: "bg-mint/20 border-mint/30 text-mint",
@@ -107,7 +108,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
                         : colorBgMap[cat.color]
                     }`}
                   >
-                    <span className="text-xl">{cat.emoji}</span>
+                    <CategoryIcon categoryId={cat.id} size={24} />
                     <span className="text-[10px] font-medium">{cat.label}</span>
                   </button>
                 ))}

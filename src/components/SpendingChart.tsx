@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { motion, AnimatePresence } from "framer-motion";
 import { Expense, CATEGORIES } from "@/lib/storage";
 import CategoryExpensesSheet from "./CategoryExpensesSheet";
+import CategoryIcon from "./CategoryIcon";
 
 type ChartType = "donut" | "bar" | "progress";
 
@@ -134,7 +135,7 @@ const SpendingChart = ({ expenses }: SpendingChartProps) => {
                     onClick={() => handleCategoryClick(d.id)}
                     className="flex items-center gap-2 text-sm hover:bg-muted/40 rounded-lg px-2 py-1 -mx-2 transition-colors text-left"
                   >
-                    <span>{d.emoji}</span>
+                    <CategoryIcon categoryId={d.id} size={16} />
                     <span className="text-foreground font-medium truncate">{d.name}</span>
                     <span className="text-muted-foreground ml-auto shrink-0">
                       {((d.value / total) * 100).toFixed(0)}%
@@ -179,7 +180,7 @@ const SpendingChart = ({ expenses }: SpendingChartProps) => {
                       const d = payload[0].payload;
                       return (
                         <div className="bg-card border border-glass-border rounded-xl px-3 py-2 text-xs shadow-xl">
-                          <span className="font-medium text-foreground">{d.emoji} {d.name}: ${d.value.toFixed(2)}</span>
+                          <span className="font-medium text-foreground">{d.name}: ${d.value.toFixed(2)}</span>
                         </div>
                       );
                     }}
@@ -217,7 +218,7 @@ const SpendingChart = ({ expenses }: SpendingChartProps) => {
                   >
                     <div className="flex items-center justify-between text-sm mb-1.5">
                       <span className="flex items-center gap-2">
-                        <span>{d.emoji}</span>
+                        <CategoryIcon categoryId={d.id} size={16} />
                         <span className="font-medium text-foreground">{d.name}</span>
                       </span>
                       <span className="font-display font-bold text-foreground">${d.value.toFixed(2)}</span>

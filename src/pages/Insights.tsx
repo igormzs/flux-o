@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { getExpenses, CATEGORIES, Expense } from "@/lib/storage";
 import { subMonths, format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import CategoryIcon from "@/components/CategoryIcon";
 
 const GRADIENT_COLORS: Record<string, { from: string; to: string }> = {
   mint: { from: "#4dd8a5", to: "#2ec4a0" },
@@ -81,7 +82,7 @@ const Insights = () => {
           <p className="text-foreground text-sm">
             This month you spent{" "}
             <span className="font-bold text-accent">{insight.pct}% more</span> on{" "}
-            {insight.cat.emoji} {insight.cat.label} than last month!
+            <CategoryIcon categoryId={insight.cat.id} size={18} className="inline-block align-text-bottom" /> {insight.cat.label} than last month!
           </p>
         </motion.div>
       )}
@@ -141,8 +142,9 @@ const Insights = () => {
               return (
                 <div key={cat.id}>
                   <div className="flex items-center justify-between text-sm mb-1">
-                    <span>
-                      {cat.emoji} {cat.label}
+                    <span className="flex items-center gap-1.5">
+                      <CategoryIcon categoryId={cat.id} size={16} />
+                      {cat.label}
                     </span>
                     <span className="font-medium text-foreground">${cat.total.toFixed(2)}</span>
                   </div>
