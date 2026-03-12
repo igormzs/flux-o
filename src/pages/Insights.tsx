@@ -142,8 +142,9 @@ const Insights = () => {
               return (
                 <div key={cat.id}>
                   <div className="flex items-center justify-between text-sm mb-1">
-                    <span>
-                      {cat.emoji} {cat.label}
+                    <span className="flex items-center gap-1.5">
+                      <CategoryIcon categoryId={cat.id} size={16} />
+                      {cat.label}
                     </span>
                     <span className="font-medium text-foreground">${cat.total.toFixed(2)}</span>
                   </div>

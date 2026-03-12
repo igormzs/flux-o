@@ -218,7 +218,7 @@ const SpendingChart = ({ expenses }: SpendingChartProps) => {
                   >
                     <div className="flex items-center justify-between text-sm mb-1.5">
                       <span className="flex items-center gap-2">
-                        <span>{d.emoji}</span>
+                        <CategoryIcon categoryId={d.id} size={16} />
                         <span className="font-medium text-foreground">{d.name}</span>
                       </span>
                       <span className="font-display font-bold text-foreground">${d.value.toFixed(2)}</span>
