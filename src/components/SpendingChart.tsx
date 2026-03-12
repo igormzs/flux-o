@@ -135,7 +135,7 @@ const SpendingChart = ({ expenses }: SpendingChartProps) => {
                     onClick={() => handleCategoryClick(d.id)}
                     className="flex items-center gap-2 text-sm hover:bg-muted/40 rounded-lg px-2 py-1 -mx-2 transition-colors text-left"
                   >
-                    <span>{d.emoji}</span>
+                    <CategoryIcon categoryId={d.id} size={16} />
                     <span className="text-foreground font-medium truncate">{d.name}</span>
                     <span className="text-muted-foreground ml-auto shrink-0">
                       {((d.value / total) * 100).toFixed(0)}%
