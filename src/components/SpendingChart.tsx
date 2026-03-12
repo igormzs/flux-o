@@ -80,7 +80,7 @@ const SpendingChart = ({ expenses }: SpendingChartProps) => {
                     : "hover:bg-muted"
                 }`}
               >
-                {ct.label}
+                {ct.icon}
               </button>
             ))}
           </div>
