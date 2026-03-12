@@ -168,11 +168,11 @@ const SpendingChart = ({ expenses }: SpendingChartProps) => {
                   <XAxis type="number" hide />
                   <YAxis
                     type="category"
-                    dataKey="emoji"
-                    tick={{ fontSize: 16 }}
+                    dataKey="name"
+                    tick={{ fontSize: 11, fill: "hsl(240, 5%, 55%)" }}
                     axisLine={false}
                     tickLine={false}
-                    width={30}
+                    width={50}
                   />
                   <Tooltip
                     cursor={false}
