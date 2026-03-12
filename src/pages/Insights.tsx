@@ -82,7 +82,7 @@ const Insights = () => {
           <p className="text-foreground text-sm">
             This month you spent{" "}
             <span className="font-bold text-accent">{insight.pct}% more</span> on{" "}
-            {insight.cat.emoji} {insight.cat.label} than last month!
+            <CategoryIcon categoryId={insight.cat.id} size={18} className="inline-block align-text-bottom" /> {insight.cat.label} than last month!
           </p>
         </motion.div>
       )}
