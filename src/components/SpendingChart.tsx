@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Expense, CATEGORIES } from "@/lib/storage";
 import CategoryExpensesSheet from "./CategoryExpensesSheet";
 import CategoryIcon from "./CategoryIcon";
+import { ChartDonut, ChartBar, TrendUp } from "@phosphor-icons/react";
 
 type ChartType = "donut" | "bar" | "progress";
 
