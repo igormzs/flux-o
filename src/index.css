@@ -60,6 +60,57 @@
     --sidebar-border: 240 6% 18%;
     --sidebar-ring: 160 60% 60%;
   }
+
+  .light {
+    --background: 0 0% 97%;
+    --foreground: 240 10% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 10%;
+
+    --primary: 160 60% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 260 50% 55%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 240 5% 90%;
+    --muted-foreground: 240 5% 45%;
+
+    --accent: 330 70% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 6% 85%;
+    --input: 240 6% 85%;
+    --ring: 160 60% 40%;
+
+    --mint: 160 60% 40%;
+    --lavender: 260 50% 55%;
+    --pink: 330 70% 55%;
+    --electric: 210 90% 50%;
+    --peach: 25 80% 55%;
+    --yellow: 45 90% 50%;
+    --teal: 180 50% 40%;
+    --coral: 10 75% 50%;
+
+    --glass-bg: 0 0% 100% / 0.7;
+    --glass-border: 240 6% 85%;
+
+    --sidebar-background: 0 0% 97%;
+    --sidebar-foreground: 240 10% 10%;
+    --sidebar-primary: 160 60% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 5% 90%;
+    --sidebar-accent-foreground: 240 10% 10%;
+    --sidebar-border: 240 6% 85%;
+    --sidebar-ring: 160 60% 40%;
+  }
 }
 
 @layer base {
@@ -67,8 +118,14 @@
     @apply border-border;
   }
 
-  body {
+  html, body {
     @apply bg-background text-foreground font-body antialiased;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  html::-webkit-scrollbar, body::-webkit-scrollbar {
+    display: none;
   }
 
   h1, h2, h3, h4, h5, h6 {
