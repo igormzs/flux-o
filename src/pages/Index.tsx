@@ -28,7 +28,7 @@ const Dashboard = () => {
   const thisMonth = thisMonthExpenses.reduce((s, e) => s + e.amount, 0);
 
   return (
-    <div className="min-h-screen bg-background pb-28 px-4 pt-6 max-w-lg mx-auto">
+    <div className="min-h-screen bg-background pb-24 px-4 pt-4 max-w-lg mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0 }}
