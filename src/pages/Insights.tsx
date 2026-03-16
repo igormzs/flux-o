@@ -168,9 +168,9 @@ const Insights = () => {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
-        className="glass-card p-6"
+        className="glass-card p-4"
       >
-        <h3 className="font-display font-bold text-foreground mb-4">This Month by Category</h3>
+        <h3 className="font-display font-bold text-foreground text-sm mb-3">This Month by Category</h3>
         {categoryBreakdown.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-4">No data this month</p>
         ) : (
