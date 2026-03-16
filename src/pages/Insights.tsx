@@ -79,9 +79,10 @@ const Insights = () => {
     .sort((a, b) => b.total - a.total);
 
   return (
-    <div className="min-h-screen bg-background pb-28 px-4 pt-6 max-w-lg mx-auto">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <h2 className="font-display font-bold text-2xl text-foreground mb-6">Insights</h2>
+    <div className="min-h-screen bg-background pb-28 px-4 pt-4 max-w-lg mx-auto">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between mb-4">
+        <h2 className="font-display font-bold text-2xl text-foreground">Insights</h2>
+        <ThemeToggle />
       </motion.div>
 
       {/* Insight card */}
