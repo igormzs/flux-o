@@ -30,12 +30,23 @@ function getMonthExpenses(expenses: Expense[], monthsAgo: number) {
 const Insights = () => {
   const expenses = useMemo(() => getExpenses(), []);
 
-  const months = [3, 2, 1, 0].map((ago) => {
+  const monthsData = [3, 2, 1, 0].map((ago) => {
     const exps = getMonthExpenses(expenses, ago);
     const total = exps.reduce((s, e) => s + e.amount, 0);
     const label = format(subMonths(new Date(), ago), "MMM");
-    return { label, total, current: ago === 0 };
+    return { label, total, current: ago === 0, ago };
   });
+
+  // Calculate month-over-month variation
+  const monthVariations = monthsData.map((m, i) => {
+    if (i === 0) return { ...m, variation: null };
+    const prev = monthsData[i - 1];
+    if (prev.total === 0) return { ...m, variation: null };
+    const pct = ((m.total - prev.total) / prev.total) * 100;
+    return { ...m, variation: Math.round(pct) };
+  });
+
+  const months = monthVariations;
 
   const thisMonth = getMonthExpenses(expenses, 0);
   const lastMonth = getMonthExpenses(expenses, 1);
