@@ -105,25 +105,51 @@ const Insights = () => {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.1 }}
-        className="glass-card p-6 mb-6"
+        className="glass-card p-4 mb-4"
       >
-        <h3 className="font-display font-bold text-foreground mb-4">Monthly Comparison</h3>
+        <h3 className="font-display font-bold text-foreground text-sm mb-3">Monthly Comparison</h3>
         {months.some((m) => m.total > 0) ? (
-          <div className="h-40">
+          <div className="h-32">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={months}>
                 <XAxis
                   dataKey="label"
-                  tick={{ fill: "hsl(240, 5%, 55%)", fontSize: 12 }}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis hide />
-                <Bar dataKey="total" radius={[8, 8, 0, 0]}>
+                <Tooltip
+                  cursor={false}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const d = payload[0].payload;
+                    return (
+                      <div className="bg-card border border-glass-border rounded-xl px-3 py-1.5 text-xs shadow-xl">
+                        <span className="font-medium text-foreground">{d.label}: ${d.total.toFixed(2)}</span>
+                        {d.variation !== null && (
+                          <span className={`ml-2 font-bold ${d.variation >= 0 ? 'text-destructive' : 'text-primary'}`}>
+                            {d.variation >= 0 ? '+' : ''}{d.variation}%
+                          </span>
+                        )}
+                      </div>
+                    );
+                  }}
+                />
+                <Bar dataKey="total" radius={[8, 8, 0, 0]} label={({ x, y, width, index }: any) => {
+                  const entry = months[index];
+                  if (entry.variation === null) return null;
+                  const color = entry.variation >= 0 ? 'hsl(0, 72%, 60%)' : 'hsl(160, 60%, 60%)';
+                  return (
+                    <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={10} fontWeight={600} fill={color}>
+                      {entry.variation >= 0 ? '+' : ''}{entry.variation}%
+                    </text>
+                  );
+                }}>
                   {months.map((entry, i) => (
                     <Cell
                       key={i}
-                      fill={entry.current ? "hsl(160, 60%, 60%)" : "hsl(240, 6%, 22%)"}
+                      fill={entry.current ? "hsl(160, 60%, 60%)" : "hsl(var(--muted))"}
                     />
                   ))}
                 </Bar>
