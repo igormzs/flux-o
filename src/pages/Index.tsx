@@ -39,7 +39,10 @@ const Dashboard = () => {
           <p className="text-muted-foreground text-sm">Welcome back 👋</p>
           <h2 className="font-display font-bold text-xl text-foreground">Flux-o</h2>
         </div>
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-mint to-lavender" />
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-mint to-lavender" />
+          <ThemeToggle />
+        </div>
       </motion.div>
 
       {/* Balance */}
