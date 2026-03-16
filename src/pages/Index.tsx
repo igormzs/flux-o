@@ -33,7 +33,7 @@ const Dashboard = () => {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex items-center justify-between mb-6">
+        className="flex items-center justify-between mb-4">
         
         <div>
           <p className="text-muted-foreground text-sm">Welcome back 👋</p>
