@@ -90,12 +90,12 @@ const Insights = () => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-card p-5 mb-6 border-l-4 border-accent"
+          className="glass-card p-3 mb-4 border-l-4 border-accent"
         >
-          <p className="text-foreground text-sm">
+          <p className="text-foreground text-xs">
             This month you spent{" "}
             <span className="font-bold text-accent">{insight.pct}% more</span> on{" "}
-            <CategoryIcon categoryId={insight.cat.id} size={18} className="inline-block align-text-bottom" /> {insight.cat.label} than last month!
+            <CategoryIcon categoryId={insight.cat.id} size={14} className="inline-block align-text-bottom" /> {insight.cat.label} than last month!
           </p>
         </motion.div>
       )}
