@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 import { getExpenses, deleteExpense, Expense } from "@/lib/storage";
 import BalanceCard from "@/components/BalanceCard";
 import TransactionCard from "@/components/TransactionCard";
