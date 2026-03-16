@@ -46,18 +46,18 @@ const Dashboard = () => {
       </motion.div>
 
       {/* Balance */}
-      <div className="mb-6">
+      <div className="mb-4">
         <BalanceCard totalSpent={totalSpent} thisMonth={thisMonth} />
       </div>
 
       {/* Spending Chart */}
-      <div className="mb-6">
+      <div className="mb-4">
         <SpendingChart expenses={thisMonthExpenses} />
       </div>
 
       {/* Recent Transactions */}
-      <div className="mb-6">
-        <h3 className="font-display font-bold text-foreground mb-3">Recent</h3>
+      <div className="mb-4">
+        <h3 className="font-display font-bold text-foreground mb-2 text-sm">Recent</h3>
         {expenses.length === 0 ?
         <div className="glass-card p-6 text-center">
             <p className="text-muted-foreground text-sm">No expenses yet. Tap + to add one!</p>
