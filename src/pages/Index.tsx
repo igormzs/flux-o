@@ -28,12 +28,12 @@ const Dashboard = () => {
   const thisMonth = thisMonthExpenses.reduce((s, e) => s + e.amount, 0);
 
   return (
-    <div className="min-h-screen bg-background pb-28 px-4 pt-6 max-w-lg mx-auto">
+    <div className="min-h-screen bg-background pb-24 px-4 pt-4 max-w-lg mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex items-center justify-between mb-6">
+        className="flex items-center justify-between mb-4">
         
         <div>
           <p className="text-muted-foreground text-sm">Welcome back 👋</p>
@@ -46,18 +46,18 @@ const Dashboard = () => {
       </motion.div>
 
       {/* Balance */}
-      <div className="mb-6">
+      <div className="mb-4">
         <BalanceCard totalSpent={totalSpent} thisMonth={thisMonth} />
       </div>
 
       {/* Spending Chart */}
-      <div className="mb-6">
+      <div className="mb-4">
         <SpendingChart expenses={thisMonthExpenses} />
       </div>
 
       {/* Recent Transactions */}
-      <div className="mb-6">
-        <h3 className="font-display font-bold text-foreground mb-3">Recent</h3>
+      <div className="mb-4">
+        <h3 className="font-display font-bold text-foreground mb-2 text-sm">Recent</h3>
         {expenses.length === 0 ?
         <div className="glass-card p-6 text-center">
             <p className="text-muted-foreground text-sm">No expenses yet. Tap + to add one!</p>
