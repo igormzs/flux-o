@@ -1,8 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
-import { CATEGORIES, saveExpense, CategoryId } from "@/lib/storage";
+import { X, Plus, Camera, CalendarBlank } from "@phosphor-icons/react";
+import { DEFAULT_CATEGORIES, saveExpense, getCustomCategories, createCustomCategory, uploadExpenseImage, CustomCategory } from "@/lib/expenses";
 import CategoryIcon from "./CategoryIcon";
+import { toast } from "sonner";
+import { format } from "date-fns";
+
+const COLORS = ["mint", "teal", "lavender", "electric", "pink", "yellow", "peach", "coral"];
+
+const PHOSPHOR_ICONS = [
+  "Pizza", "ShoppingCart", "House", "Television", "BeerBottle", "Plug", "Gift", "AirplaneTilt",
+  "Car", "Heart", "Star", "Coffee", "Dog", "Cat", "GameController", "MusicNote",
+  "GraduationCap", "Barbell", "FirstAid", "Scissors", "PaintBrush", "Wrench",
+  "Phone", "Laptop", "Book", "Briefcase", "ShoppingBag", "Baby",
+];
 
 const colorBgMap: Record<string, string> = {
   mint: "bg-mint/20 border-mint/30 text-mint",
@@ -33,21 +44,82 @@ interface AddExpenseSheetProps {
 }
 
 const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
+  const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState<CategoryId | "">("");
+  const [category, setCategory] = useState("");
+  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCatLabel, setNewCatLabel] = useState("");
+  const [newCatIcon, setNewCatIcon] = useState("Star");
+  const [newCatColor, setNewCatColor] = useState("mint");
 
-  const handleSubmit = () => {
-    if (!amount || !category) return;
-    saveExpense({
-      amount: parseFloat(amount),
-      category,
-      date: new Date().toISOString(),
-    });
-    setAmount("");
-    setCategory("");
-    onAdded();
-    onClose();
+  useEffect(() => {
+    if (open) {
+      getCustomCategories().then(setCustomCategories).catch(console.error);
+    }
+  }, [open]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
   };
+
+  const handleCreateCategory = async () => {
+    if (!newCatLabel.trim()) return;
+    try {
+      const cat = await createCustomCategory({ label: newCatLabel.trim(), icon: newCatIcon, color: newCatColor });
+      setCustomCategories((prev) => [...prev, cat]);
+      setCategory(cat.id);
+      setShowNewCategory(false);
+      setNewCatLabel("");
+      toast.success("Category created!");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!amount || !category || !title.trim()) return;
+    setLoading(true);
+    try {
+      let imageUrl: string | null = null;
+      if (imageFile) {
+        imageUrl = await uploadExpenseImage(imageFile);
+      }
+      await saveExpense({
+        title: title.trim(),
+        amount: parseFloat(amount),
+        category,
+        date: new Date(date).toISOString(),
+        image_url: imageUrl,
+      });
+      setTitle("");
+      setAmount("");
+      setCategory("");
+      setDate(format(new Date(), "yyyy-MM-dd"));
+      setImageFile(null);
+      setImagePreview(null);
+      onAdded();
+      onClose();
+      toast.success("Expense added!");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const allCategories = [
+    ...DEFAULT_CATEGORIES.map((c) => ({ ...c, isCustom: false })),
+    ...customCategories.map((c) => ({ id: c.id, label: c.label, icon: c.icon, color: c.color, isCustom: true })),
+  ];
 
   return (
     <AnimatePresence>
@@ -65,64 +137,185 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 35 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-glass-border rounded-t-3xl p-6 pb-10 max-h-[85vh] overflow-auto"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-glass-border rounded-t-3xl p-6 pb-10 max-h-[90vh] overflow-auto scrollbar-none"
           >
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-5">
               <h2 className="font-display font-bold text-xl text-foreground">Add Expense</h2>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X size={16} />
+              <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                <X size={16} weight="bold" />
               </button>
             </div>
 
-            {/* Amount input */}
-            <div className="mb-6">
-              <label className="text-sm text-muted-foreground mb-2 block">Amount</label>
+            {/* Title */}
+            <div className="mb-4">
+              <label className="text-sm text-muted-foreground mb-1.5 block">Title</label>
+              <input
+                type="text"
+                placeholder="What did you spend on?"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full h-11 rounded-xl bg-muted border-none px-4 text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/30 text-sm"
+              />
+            </div>
+
+            {/* Amount */}
+            <div className="mb-4">
+              <label className="text-sm text-muted-foreground mb-1.5 block">Amount</label>
               <div className="flex items-center gap-2">
-                <span className="text-3xl font-display font-bold text-muted-foreground">$</span>
+                <span className="text-2xl font-display font-bold text-muted-foreground">$</span>
                 <input
                   type="number"
                   inputMode="decimal"
                   placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="bg-transparent text-4xl font-display font-bold text-foreground outline-none w-full placeholder:text-muted-foreground/30"
-                  autoFocus
+                  className="bg-transparent text-3xl font-display font-bold text-foreground outline-none w-full placeholder:text-muted-foreground/30"
                 />
               </div>
             </div>
 
+            {/* Date */}
+            <div className="mb-4">
+              <label className="text-sm text-muted-foreground mb-1.5 block">Date</label>
+              <div className="relative">
+                <CalendarBlank size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full h-11 rounded-xl bg-muted border-none pl-10 pr-4 text-foreground outline-none focus:ring-2 focus:ring-primary/30 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Image */}
+            <div className="mb-4">
+              <label className="text-sm text-muted-foreground mb-1.5 block">Receipt / Image</label>
+              {imagePreview ? (
+                <div className="relative w-full h-32 rounded-xl overflow-hidden">
+                  <img src={imagePreview} alt="Receipt" className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => { setImageFile(null); setImagePreview(null); }}
+                    className="absolute top-2 right-2 w-6 h-6 rounded-full bg-background/80 flex items-center justify-center"
+                  >
+                    <X size={12} weight="bold" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex items-center gap-2 h-11 rounded-xl bg-muted px-4 cursor-pointer text-muted-foreground hover:text-foreground transition-colors text-sm">
+                  <Camera size={18} />
+                  <span>Add photo</span>
+                  <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                </label>
+              )}
+            </div>
+
             {/* Category grid */}
-            <div className="mb-8">
-              <label className="text-sm text-muted-foreground mb-3 block">Category</label>
+            <div className="mb-6">
+              <label className="text-sm text-muted-foreground mb-2 block">Category</label>
               <div className="grid grid-cols-4 gap-2">
-                {CATEGORIES.map((cat) => (
+                {allCategories.map((cat) => (
                   <button
                     key={cat.id}
                     onClick={() => setCategory(cat.id)}
-                    className={`flex flex-col items-center gap-1 p-3 rounded-xl border transition-all duration-200 ${
-                      category === cat.id
-                        ? selectedMap[cat.color]
-                        : colorBgMap[cat.color]
+                    className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border transition-all duration-200 text-xs ${
+                      category === cat.id ? selectedMap[cat.color] : colorBgMap[cat.color]
                     }`}
                   >
-                    <CategoryIcon categoryId={cat.id} size={24} />
-                    <span className="text-[10px] font-medium">{cat.label}</span>
+                    <CategoryIcon categoryId={cat.isCustom ? "__custom__" : cat.id} customIcon={cat.icon} size={22} />
+                    <span className="font-medium truncate w-full text-center text-[10px]">{cat.label}</span>
                   </button>
                 ))}
+                {/* Add new category button */}
+                <button
+                  onClick={() => setShowNewCategory(true)}
+                  className="flex flex-col items-center gap-1 p-2.5 rounded-xl border border-dashed border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all"
+                >
+                  <Plus size={22} />
+                  <span className="text-[10px] font-medium">New</span>
+                </button>
               </div>
             </div>
+
+            {/* New category form */}
+            <AnimatePresence>
+              {showNewCategory && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-6 overflow-hidden"
+                >
+                  <div className="glass-card p-4 space-y-3">
+                    <h4 className="font-display font-bold text-sm text-foreground">New Category</h4>
+                    <input
+                      type="text"
+                      placeholder="Category name"
+                      value={newCatLabel}
+                      onChange={(e) => setNewCatLabel(e.target.value)}
+                      className="w-full h-10 rounded-lg bg-muted border-none px-3 text-foreground placeholder:text-muted-foreground/40 outline-none text-sm"
+                    />
+                    {/* Icon picker */}
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1.5 block">Icon</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {PHOSPHOR_ICONS.map((icon) => (
+                          <button
+                            key={icon}
+                            onClick={() => setNewCatIcon(icon)}
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs transition-all ${
+                              newCatIcon === icon ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            <CategoryIcon categoryId="__custom__" customIcon={icon} size={16} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Color picker */}
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1.5 block">Color</label>
+                      <div className="flex gap-2">
+                        {COLORS.map((c) => (
+                          <button
+                            key={c}
+                            onClick={() => setNewCatColor(c)}
+                            className={`w-7 h-7 rounded-full transition-all ${
+                              newCatColor === c ? "ring-2 ring-foreground ring-offset-2 ring-offset-card" : ""
+                            }`}
+                            style={{ backgroundColor: `hsl(var(--${c}))` }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowNewCategory(false)}
+                        className="flex-1 h-9 rounded-lg bg-muted text-muted-foreground text-sm font-medium"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleCreateCategory}
+                        disabled={!newCatLabel.trim()}
+                        className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground text-sm font-bold disabled:opacity-40"
+                      >
+                        Create
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Submit */}
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={handleSubmit}
-              disabled={!amount || !category}
+              disabled={!amount || !category || !title.trim() || loading}
               className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-display font-bold text-lg disabled:opacity-30 transition-opacity"
             >
-              Add Expense
+              {loading ? "Adding..." : "Add Expense"}
             </motion.button>
           </motion.div>
         </>
