@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
-import { Expense, getCategoryById } from "@/lib/storage";
+import { X } from "@phosphor-icons/react";
+import { Expense, getCategoryInfo, DEFAULT_CATEGORIES, CustomCategory } from "@/lib/expenses";
 import { format } from "date-fns";
 import CategoryIcon from "./CategoryIcon";
 
@@ -12,13 +12,12 @@ interface CategoryExpensesSheetProps {
 }
 
 const CategoryExpensesSheet = ({ open, onClose, categoryId, expenses }: CategoryExpensesSheetProps) => {
-  const cat = getCategoryById(categoryId);
+  // We don't have customCategories passed here, use empty array for defaults
+  const cat = getCategoryInfo(categoryId, []);
   const filtered = expenses.filter((e) => e.category === categoryId).sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
-  const total = filtered.reduce((s, e) => s + e.amount, 0);
-
-  if (!cat) return null;
+  const total = filtered.reduce((s, e) => s + Number(e.amount), 0);
 
   return (
     <AnimatePresence>
@@ -36,11 +35,11 @@ const CategoryExpensesSheet = ({ open, onClose, categoryId, expenses }: Category
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 35 }}
-            className="fixed bottom-0 left-0 right-0 z-[60] bg-card border-t border-glass-border rounded-t-3xl p-6 pb-10 max-h-[80vh] overflow-auto"
+            className="fixed bottom-0 left-0 right-0 z-[60] bg-card border-t border-glass-border rounded-t-3xl p-6 pb-10 max-h-[80vh] overflow-auto scrollbar-none"
           >
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <CategoryIcon categoryId={categoryId} size={28} />
+                <CategoryIcon categoryId={categoryId} customIcon={cat.icon} size={28} />
                 <div>
                   <h2 className="font-display font-bold text-lg text-foreground">{cat.label}</h2>
                   <p className="text-sm text-muted-foreground">{filtered.length} expenses · ${total.toFixed(2)}</p>
@@ -50,7 +49,7 @@ const CategoryExpensesSheet = ({ open, onClose, categoryId, expenses }: Category
                 onClick={onClose}
                 className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               >
-                <X size={16} />
+                <X size={16} weight="bold" />
               </button>
             </div>
 
@@ -66,16 +65,10 @@ const CategoryExpensesSheet = ({ open, onClose, categoryId, expenses }: Category
                     className="flex items-center justify-between p-3 rounded-xl bg-muted/40"
                   >
                     <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {exp.note || cat.label}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(exp.date), "MMM d, yyyy")}
-                      </p>
+                      <p className="text-sm font-medium text-foreground">{exp.title || cat.label}</p>
+                      <p className="text-xs text-muted-foreground">{format(new Date(exp.date), "MMM d, yyyy")}</p>
                     </div>
-                    <span className="font-display font-bold text-foreground">
-                      -${exp.amount.toFixed(2)}
-                    </span>
+                    <span className="font-display font-bold text-foreground">-${Number(exp.amount).toFixed(2)}</span>
                   </motion.div>
                 ))}
               </div>
