@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { Trash2 } from "lucide-react";
-import { Expense, getCategoryById } from "@/lib/storage";
+import { Trash } from "@phosphor-icons/react";
+import { Expense, getCategoryInfo, CustomCategory } from "@/lib/expenses";
 import { format } from "date-fns";
 import CategoryIcon from "./CategoryIcon";
 
@@ -8,6 +8,7 @@ interface TransactionCardProps {
   expense: Expense;
   index: number;
   onDelete: (id: string) => void;
+  customCategories: CustomCategory[];
 }
 
 const colorMap: Record<string, string> = {
@@ -21,8 +22,8 @@ const colorMap: Record<string, string> = {
   coral: "bg-coral/15 text-coral",
 };
 
-const TransactionCard = ({ expense, index, onDelete }: TransactionCardProps) => {
-  const cat = getCategoryById(expense.category);
+const TransactionCard = ({ expense, index, onDelete, customCategories }: TransactionCardProps) => {
+  const cat = getCategoryInfo(expense.category, customCategories);
 
   return (
     <motion.div
@@ -33,27 +34,27 @@ const TransactionCard = ({ expense, index, onDelete }: TransactionCardProps) => 
     >
       <div
         className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${
-          colorMap[cat?.color ?? "mint"]
+          colorMap[cat.color] ?? colorMap.mint
         }`}
       >
-        <CategoryIcon categoryId={expense.category} size={22} />
+        <CategoryIcon categoryId={expense.category} customIcon={cat.icon} size={22} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-medium text-foreground text-sm truncate">
-          {cat?.label ?? expense.category}
+          {expense.title}
         </p>
         <p className="text-xs text-muted-foreground">
           {format(new Date(expense.date), "MMM d, h:mm a")}
         </p>
       </div>
       <p className="font-display font-bold text-foreground text-sm shrink-0">
-        -${expense.amount.toFixed(2)}
+        -${Number(expense.amount).toFixed(2)}
       </p>
       <button
         onClick={() => onDelete(expense.id)}
         className="text-muted-foreground hover:text-destructive transition-colors p-1 shrink-0"
       >
-        <Trash2 size={14} />
+        <Trash size={14} weight="duotone" />
       </button>
     </motion.div>
   );

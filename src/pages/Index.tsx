@@ -1,22 +1,49 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
+import { Plus, SignOut } from "@phosphor-icons/react";
 import ThemeToggle from "@/components/ThemeToggle";
-import { getExpenses, deleteExpense, Expense } from "@/lib/storage";
+import { getExpenses, deleteExpense, Expense, getCustomCategories, CustomCategory } from "@/lib/expenses";
 import BalanceCard from "@/components/BalanceCard";
 import TransactionCard from "@/components/TransactionCard";
 import SpendingChart from "@/components/SpendingChart";
 import AddExpenseSheet from "@/components/AddExpenseSheet";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const Dashboard = () => {
-  const [expenses, setExpenses] = useState<Expense[]>(getExpenses);
+  const { user, signOut } = useAuth();
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [showAdd, setShowAdd] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(() => setExpenses(getExpenses()), []);
+  const refresh = useCallback(async () => {
+    try {
+      const [exps, cats] = await Promise.all([getExpenses(), getCustomCategories()]);
+      setExpenses(exps);
+      setCustomCategories(cats);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const handleDelete = (id: string) => {
-    deleteExpense(id);
+  useEffect(() => {
     refresh();
+  }, [refresh]);
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteExpense(id);
+      refresh();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   const now = new Date();
@@ -27,21 +54,36 @@ const Dashboard = () => {
   const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
   const thisMonth = thisMonthExpenses.reduce((s, e) => s + e.amount, 0);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background pb-24 px-4 pt-4 max-w-lg mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex items-center justify-between mb-4">
-        
+        className="flex items-center justify-between mb-4"
+      >
         <div>
           <p className="text-muted-foreground text-sm">Welcome back 👋</p>
-          <h2 className="font-display font-bold text-xl text-foreground">Flux-o</h2>
+          <h2 className="font-display font-bold text-xl text-foreground">
+            {user?.email?.split("@")[0] ?? "Flux-o"}
+          </h2>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-mint to-lavender" />
           <ThemeToggle />
+          <button
+            onClick={handleSignOut}
+            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <SignOut size={18} weight="bold" />
+          </button>
         </div>
       </motion.div>
 
@@ -52,28 +94,29 @@ const Dashboard = () => {
 
       {/* Spending Chart */}
       <div className="mb-4">
-        <SpendingChart expenses={thisMonthExpenses} />
+        <SpendingChart expenses={thisMonthExpenses} customCategories={customCategories} />
       </div>
 
       {/* Recent Transactions */}
       <div className="mb-4">
         <h3 className="font-display font-bold text-foreground mb-2 text-sm">Recent</h3>
-        {expenses.length === 0 ?
-        <div className="glass-card p-6 text-center">
+        {expenses.length === 0 ? (
+          <div className="glass-card p-6 text-center">
             <p className="text-muted-foreground text-sm">No expenses yet. Tap + to add one!</p>
-          </div> :
-
-        <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-none -mx-4 px-4">
-            {expenses.slice(0, 10).map((exp, i) =>
-          <TransactionCard
-            key={exp.id}
-            expense={exp}
-            index={i}
-            onDelete={handleDelete} />
-
-          )}
           </div>
-        }
+        ) : (
+          <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-none -mx-4 px-4">
+            {expenses.slice(0, 10).map((exp, i) => (
+              <TransactionCard
+                key={exp.id}
+                expense={exp}
+                index={i}
+                onDelete={handleDelete}
+                customCategories={customCategories}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* FAB */}
@@ -81,18 +124,18 @@ const Dashboard = () => {
         whileTap={{ scale: 0.85 }}
         whileHover={{ scale: 1.05 }}
         onClick={() => setShowAdd(true)}
-        className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center z-40">
-        
-        <Plus size={24} strokeWidth={2.5} />
+        className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center z-40"
+      >
+        <Plus size={24} weight="bold" />
       </motion.button>
 
       <AddExpenseSheet
         open={showAdd}
         onClose={() => setShowAdd(false)}
-        onAdded={refresh} />
-      
-    </div>);
-
+        onAdded={refresh}
+      />
+    </div>
+  );
 };
 
 export default Dashboard;

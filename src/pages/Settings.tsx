@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { CurrencyDollar, Target, Bell, BellSlash, Trash, ArrowLeft } from "@phosphor-icons/react";
+import { CurrencyDollar, Target, Bell, Trash, ArrowLeft, SignOut } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SettingsData {
   budgetGoal: number;
@@ -31,24 +32,19 @@ const SETTINGS_KEY = "fluxo_settings";
 function loadSettings(): SettingsData {
   const raw = localStorage.getItem(SETTINGS_KEY);
   if (raw) return JSON.parse(raw);
-  return {
-    budgetGoal: 2000,
-    currency: "USD",
-    notifications: { overBudget: true, weeklyReport: false, dailyReminder: false },
-  };
+  return { budgetGoal: 2000, currency: "USD", notifications: { overBudget: true, weeklyReport: false, dailyReminder: false } };
 }
 
-function saveSettings(data: SettingsData) {
+function saveSettingsLocal(data: SettingsData) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(data));
 }
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [settings, setSettings] = useState<SettingsData>(loadSettings);
 
-  useEffect(() => {
-    saveSettings(settings);
-  }, [settings]);
+  useEffect(() => { saveSettingsLocal(settings); }, [settings]);
 
   const update = (patch: Partial<SettingsData>) => {
     setSettings((prev) => ({ ...prev, ...patch }));
@@ -56,17 +52,12 @@ const Settings = () => {
   };
 
   const updateNotif = (key: keyof SettingsData["notifications"], val: boolean) => {
-    setSettings((prev) => ({
-      ...prev,
-      notifications: { ...prev.notifications, [key]: val },
-    }));
+    setSettings((prev) => ({ ...prev, notifications: { ...prev.notifications, [key]: val } }));
     toast.success("Settings saved");
   };
 
-  const clearData = () => {
-    localStorage.removeItem("fluxo_expenses");
-    localStorage.removeItem("fluxo_seeded");
-    toast.success("All expense data cleared");
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   return (
@@ -88,15 +79,8 @@ const Settings = () => {
           <h3 className="font-display font-bold text-foreground text-sm">Monthly Budget Goal</h3>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-muted-foreground text-lg font-medium">
-            {CURRENCIES.find((c) => c.code === settings.currency)?.symbol || "$"}
-          </span>
-          <Input
-            type="number"
-            value={settings.budgetGoal}
-            onChange={(e) => update({ budgetGoal: Number(e.target.value) })}
-            className="bg-muted border-none text-foreground font-display font-bold text-lg h-10"
-          />
+          <span className="text-muted-foreground text-lg font-medium">{CURRENCIES.find((c) => c.code === settings.currency)?.symbol || "$"}</span>
+          <Input type="number" value={settings.budgetGoal} onChange={(e) => update({ budgetGoal: Number(e.target.value) })} className="bg-muted border-none text-foreground font-display font-bold text-lg h-10" />
         </div>
       </motion.div>
 
@@ -108,17 +92,8 @@ const Settings = () => {
         </div>
         <div className="grid grid-cols-3 gap-2">
           {CURRENCIES.map((c) => (
-            <button
-              key={c.code}
-              onClick={() => update({ currency: c.code })}
-              className={`rounded-xl px-3 py-2 text-xs font-medium transition-all ${
-                settings.currency === c.code
-                  ? "bg-primary/20 text-primary border border-primary/30"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
-            >
-              <span className="block text-base">{c.symbol}</span>
-              {c.code}
+            <button key={c.code} onClick={() => update({ currency: c.code })} className={`rounded-xl px-3 py-2 text-xs font-medium transition-all ${settings.currency === c.code ? "bg-primary/20 text-primary border border-primary/30" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+              <span className="block text-base">{c.symbol}</span>{c.code}
             </button>
           ))}
         </div>
@@ -141,24 +116,24 @@ const Settings = () => {
                 <p className="text-foreground text-sm font-medium">{item.label}</p>
                 <p className="text-muted-foreground text-xs">{item.desc}</p>
               </div>
-              <Switch
-                checked={settings.notifications[item.key]}
-                onCheckedChange={(val) => updateNotif(item.key, val)}
-              />
+              <Switch checked={settings.notifications[item.key]} onCheckedChange={(val) => updateNotif(item.key, val)} />
             </div>
           ))}
         </div>
       </motion.div>
 
-      {/* Danger zone */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-4">
-        <button
-          onClick={clearData}
-          className="flex items-center gap-2 text-destructive text-sm font-medium hover:opacity-80 transition-opacity"
-        >
-          <Trash size={18} weight="duotone" />
-          Clear all expense data
+      {/* Account actions */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-4 space-y-3">
+        <button onClick={handleSignOut} className="flex items-center gap-2 text-muted-foreground text-sm font-medium hover:text-foreground transition-colors w-full">
+          <SignOut size={18} weight="duotone" />
+          Sign out
         </button>
+        <div className="border-t border-glass-border pt-3">
+          <button onClick={() => { toast.success("Data cleared"); }} className="flex items-center gap-2 text-destructive text-sm font-medium hover:opacity-80 transition-opacity">
+            <Trash size={18} weight="duotone" />
+            Clear all expense data
+          </button>
+        </div>
       </motion.div>
     </div>
   );
