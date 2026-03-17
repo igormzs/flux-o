@@ -14,7 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      custom_categories: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string
+          id: string
+          label: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          label: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          label?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          custom_category_id: string | null
+          date: string
+          id: string
+          image_url: string | null
+          note: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          custom_category_id?: string | null
+          date?: string
+          id?: string
+          image_url?: string | null
+          note?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          custom_category_id?: string | null
+          date?: string
+          id?: string
+          image_url?: string | null
+          note?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_custom_category_id_fkey"
+            columns: ["custom_category_id"]
+            isOneToOne: false
+            referencedRelation: "custom_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
