@@ -7,6 +7,7 @@ import BalanceCard from "@/components/BalanceCard";
 import TransactionCard from "@/components/TransactionCard";
 import SpendingChart from "@/components/SpendingChart";
 import AddExpenseSheet from "@/components/AddExpenseSheet";
+import ExpenseDetailSheet from "@/components/ExpenseDetailSheet";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -15,6 +16,7 @@ const Dashboard = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [showAdd, setShowAdd] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -29,9 +31,7 @@ const Dashboard = () => {
     }
   }, []);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  useEffect(() => { refresh(); }, [refresh]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -40,10 +40,6 @@ const Dashboard = () => {
     } catch (err: any) {
       toast.error(err.message);
     }
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
   };
 
   const now = new Date();
@@ -64,12 +60,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24 px-4 pt-4 max-w-lg mx-auto">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="flex items-center justify-between mb-4"
-      >
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between mb-4">
         <div>
           <p className="text-muted-foreground text-sm">Welcome back 👋</p>
           <h2 className="font-display font-bold text-xl text-foreground">
@@ -78,26 +69,20 @@ const Dashboard = () => {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <button
-            onClick={handleSignOut}
-            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
-          >
+          <button onClick={() => signOut()} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors">
             <SignOut size={18} weight="bold" />
           </button>
         </div>
       </motion.div>
 
-      {/* Balance */}
       <div className="mb-4">
         <BalanceCard totalSpent={totalSpent} thisMonth={thisMonth} />
       </div>
 
-      {/* Spending Chart */}
       <div className="mb-4">
         <SpendingChart expenses={thisMonthExpenses} customCategories={customCategories} />
       </div>
 
-      {/* Recent Transactions */}
       <div className="mb-4">
         <h3 className="font-display font-bold text-foreground mb-2 text-sm">Recent</h3>
         {expenses.length === 0 ? (
@@ -111,7 +96,7 @@ const Dashboard = () => {
                 key={exp.id}
                 expense={exp}
                 index={i}
-                onDelete={handleDelete}
+                onTap={setSelectedExpense}
                 customCategories={customCategories}
               />
             ))}
@@ -119,7 +104,6 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* FAB */}
       <motion.button
         whileTap={{ scale: 0.85 }}
         whileHover={{ scale: 1.05 }}
@@ -129,10 +113,13 @@ const Dashboard = () => {
         <Plus size={24} weight="bold" />
       </motion.button>
 
-      <AddExpenseSheet
-        open={showAdd}
-        onClose={() => setShowAdd(false)}
-        onAdded={refresh}
+      <AddExpenseSheet open={showAdd} onClose={() => setShowAdd(false)} onAdded={refresh} />
+      <ExpenseDetailSheet
+        expense={selectedExpense}
+        open={!!selectedExpense}
+        onClose={() => setSelectedExpense(null)}
+        onDelete={handleDelete}
+        customCategories={customCategories}
       />
     </div>
   );
