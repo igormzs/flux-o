@@ -98,10 +98,12 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
         title: title.trim(),
         amount: parseFloat(amount),
         category,
+        note: description.trim() || undefined,
         date: new Date(date).toISOString(),
         image_url: imageUrl,
       });
       setTitle("");
+      setDescription("");
       setAmount("");
       setCategory("");
       setDate(format(new Date(), "yyyy-MM-dd"));
