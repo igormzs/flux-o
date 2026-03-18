@@ -18,6 +18,15 @@ const Dashboard = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [loading, setLoading] = useState(true);
+  const [displayName, setDisplayName] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("username").eq("id", user.id).single().then(({ data }) => {
+      const name = data?.username || user.email?.split("@")[0] || "there";
+      setDisplayName(name.split(/[\s_.-]/)[0]);
+    });
+  }, [user]);
 
   const refresh = useCallback(async () => {
     try {
