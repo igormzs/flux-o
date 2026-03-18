@@ -3,14 +3,17 @@ import { motion } from "framer-motion";
 import { Wallet, Eye, EyeSlash, ArrowRight } from "@phosphor-icons/react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const Auth = () => {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signUp, signIn } = useAuth();
+
+  const isSignUp = activeTab === "register";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,18 +34,47 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
+      {/* Theme toggle - top right */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm"
       >
         {/* Logo */}
-        <div className="flex flex-col items-center mb-10">
+        <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-mint to-lavender flex items-center justify-center mb-4">
             <Wallet size={32} weight="duotone" className="text-primary-foreground" />
           </div>
           <h1 className="font-display font-bold text-3xl text-foreground">Flux-o</h1>
           <p className="text-muted-foreground text-sm mt-1">Track your expenses effortlessly</p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex rounded-xl bg-muted p-1 mb-6">
+          <button
+            onClick={() => setActiveTab("login")}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-display font-bold transition-all ${
+              activeTab === "login"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Sign In
+          </button>
+          <button
+            onClick={() => setActiveTab("register")}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-display font-bold transition-all ${
+              activeTab === "register"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Create Account
+          </button>
         </div>
 
         {/* Form */}
@@ -98,15 +130,11 @@ const Auth = () => {
           </motion.button>
         </form>
 
-        {/* Toggle */}
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-          <button
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-primary font-medium hover:underline"
-          >
-            {isSignUp ? "Sign in" : "Sign up"}
-          </button>
+        {/* Footer hint */}
+        <p className="text-center text-xs text-muted-foreground mt-6">
+          {isSignUp
+            ? "By creating an account you agree to our terms."
+            : "Forgot your password? Contact support."}
         </p>
       </motion.div>
     </div>

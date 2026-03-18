@@ -1,11 +1,11 @@
-import { Home, BarChart3, Settings } from "lucide-react";
+import { Home, BarChart3, UserCircle } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const tabs = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/insights", icon: BarChart3, label: "Insights" },
-  { path: "/settings", icon: Settings, label: "Settings" },
+  { path: "/profile", icon: UserCircle, label: "Profile" },
 ];
 
 const BottomNav = () => {
@@ -34,11 +34,7 @@ const BottomNav = () => {
                 size={22}
                 className={active ? "text-primary" : "text-muted-foreground"}
               />
-              <span
-                className={`text-xs font-medium ${
-                  active ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
+              <span className={`text-xs font-medium ${active ? "text-primary" : "text-muted-foreground"}`}>
                 {tab.label}
               </span>
             </button>

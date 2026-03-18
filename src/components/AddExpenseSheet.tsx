@@ -45,6 +45,7 @@ interface AddExpenseSheetProps {
 
 const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
@@ -97,10 +98,12 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
         title: title.trim(),
         amount: parseFloat(amount),
         category,
+        note: description.trim() || undefined,
         date: new Date(date).toISOString(),
         image_url: imageUrl,
       });
       setTitle("");
+      setDescription("");
       setAmount("");
       setCategory("");
       setDate(format(new Date(), "yyyy-MM-dd"));
@@ -155,6 +158,18 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full h-11 rounded-xl bg-muted border-none px-4 text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/30 text-sm"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="mb-4">
+              <label className="text-sm text-muted-foreground mb-1.5 block">Description <span className="text-muted-foreground/50">(optional)</span></label>
+              <textarea
+                placeholder="Add a note or description..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+                className="w-full rounded-xl bg-muted border-none px-4 py-3 text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/30 text-sm resize-none"
               />
             </div>
 

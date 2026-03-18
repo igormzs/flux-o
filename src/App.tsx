@@ -6,7 +6,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import BottomNav from "@/components/BottomNav";
 import Index from "./pages/Index";
 import Insights from "./pages/Insights";
-import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -47,7 +47,8 @@ const AppRoutes = () => {
         <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
         <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
         <Route path="/insights" element={<ProtectedRoute><Insights /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/settings" element={<Navigate to="/profile" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {user && <BottomNav />}
