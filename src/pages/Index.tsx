@@ -8,7 +8,7 @@ import TransactionCard from "@/components/TransactionCard";
 import SpendingChart from "@/components/SpendingChart";
 import AddExpenseSheet from "@/components/AddExpenseSheet";
 import ExpenseDetailSheet from "@/components/ExpenseDetailSheet";
-import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const Dashboard = () => {
