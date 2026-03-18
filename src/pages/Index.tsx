@@ -73,7 +73,7 @@ const Dashboard = () => {
         <div>
           <p className="text-muted-foreground text-sm">Welcome back 👋</p>
           <h2 className="font-display font-bold text-xl text-foreground">
-            {user?.email?.split("@")[0] ?? "Flux-o"}
+            {displayName || "Flux-o"}
           </h2>
         </div>
         <div className="flex items-center gap-2">
