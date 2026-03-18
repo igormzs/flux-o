@@ -8,6 +8,7 @@ import TransactionCard from "@/components/TransactionCard";
 import SpendingChart from "@/components/SpendingChart";
 import AddExpenseSheet from "@/components/AddExpenseSheet";
 import ExpenseDetailSheet from "@/components/ExpenseDetailSheet";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -18,6 +19,15 @@ const Dashboard = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [loading, setLoading] = useState(true);
+  const [displayName, setDisplayName] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("username").eq("id", user.id).single().then(({ data }) => {
+      const name = data?.username || user.email?.split("@")[0] || "there";
+      setDisplayName(name.split(/[\s_.-]/)[0]);
+    });
+  }, [user]);
 
   const refresh = useCallback(async () => {
     try {
@@ -64,7 +74,7 @@ const Dashboard = () => {
         <div>
           <p className="text-muted-foreground text-sm">Welcome back 👋</p>
           <h2 className="font-display font-bold text-xl text-foreground">
-            {user?.email?.split("@")[0] ?? "Flux-o"}
+            {displayName || "Flux-o"}
           </h2>
         </div>
         <div className="flex items-center gap-2">
