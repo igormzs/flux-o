@@ -158,6 +158,18 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
               />
             </div>
 
+            {/* Description */}
+            <div className="mb-4">
+              <label className="text-sm text-muted-foreground mb-1.5 block">Description <span className="text-muted-foreground/50">(optional)</span></label>
+              <textarea
+                placeholder="Add a note or description..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+                className="w-full rounded-xl bg-muted border-none px-4 py-3 text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/30 text-sm resize-none"
+              />
+            </div>
+
             {/* Amount */}
             <div className="mb-4">
               <label className="text-sm text-muted-foreground mb-1.5 block">Amount</label>
