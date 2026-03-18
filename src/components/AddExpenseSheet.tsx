@@ -45,6 +45,7 @@ interface AddExpenseSheetProps {
 
 const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
