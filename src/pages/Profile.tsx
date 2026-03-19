@@ -91,7 +91,7 @@ const Profile = () => {
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ username, updated_at: new Date().toISOString() })
+      .update({ first_name: firstName, last_name: lastName, username, updated_at: new Date().toISOString() } as any)
       .eq("id", user.id);
     setSaving(false);
     if (error) toast.error(error.message);
