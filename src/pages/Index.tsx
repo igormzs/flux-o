@@ -23,8 +23,8 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("username").eq("id", user.id).single().then(({ data }) => {
-      const name = data?.username || user.email?.split("@")[0] || "there";
+    supabase.from("profiles").select("first_name, username").eq("id", user.id).single().then(({ data }) => {
+      const name = (data as any)?.first_name || data?.username || user.email?.split("@")[0] || "there";
       setDisplayName(name.split(/[\s_.-]/)[0]);
     });
   }, [user]);

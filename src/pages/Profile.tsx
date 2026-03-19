@@ -39,6 +39,8 @@ const Profile = () => {
   const { user, signOut } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -56,6 +58,8 @@ const Profile = () => {
       .single()
       .then(({ data, error }) => {
         if (data) {
+          setFirstName((data as any).first_name || "");
+          setLastName((data as any).last_name || "");
           setUsername(data.username || "");
           setAvatarUrl(data.avatar_url);
         }
@@ -87,7 +91,7 @@ const Profile = () => {
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ username, updated_at: new Date().toISOString() })
+      .update({ first_name: firstName, last_name: lastName, username, updated_at: new Date().toISOString() } as any)
       .eq("id", user.id);
     setSaving(false);
     if (error) toast.error(error.message);
@@ -146,6 +150,26 @@ const Profile = () => {
         </div>
         <p className="text-xs text-muted-foreground mb-3">{user?.email}</p>
         <div className="w-full space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">First Name</label>
+              <Input
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="First name"
+                className="bg-muted border-none text-foreground h-10"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Last Name</label>
+              <Input
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Last name"
+                className="bg-muted border-none text-foreground h-10"
+              />
+            </div>
+          </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Username</label>
             <Input
