@@ -119,7 +119,7 @@ const Insights = () => {
                     </div>
                   );
                 }} />
-                <Bar dataKey="total" radius={[8, 8, 0, 0]} label={({ x, y, width, index }: any) => {
+                <Bar dataKey="total" radius={[8, 8, 0, 0]} label={({ x, y, width, index }: { x: number; y: number; width: number; index: number }) => {
                   const entry = months[index];
                   if (entry.variation === null) return null;
                   const color = entry.variation >= 0 ? 'hsl(0, 72%, 60%)' : 'hsl(160, 60%, 60%)';

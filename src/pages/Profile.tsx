@@ -42,6 +42,11 @@ const Profile = () => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
+  
+  const [savedFirstName, setSavedFirstName] = useState("");
+  const [savedLastName, setSavedLastName] = useState("");
+  const [savedUsername, setSavedUsername] = useState("");
+  
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -58,10 +63,14 @@ const Profile = () => {
       .single()
       .then(({ data, error }) => {
         if (data) {
-          setFirstName((data as any).first_name || "");
-          setLastName((data as any).last_name || "");
-          setUsername(data.username || "");
-          setAvatarUrl(data.avatar_url);
+          const profileData = data as { first_name?: string; last_name?: string; username?: string; avatar_url?: string };
+          setFirstName(profileData.first_name || "");
+          setLastName(profileData.last_name || "");
+          setUsername(profileData.username || "");
+          setSavedFirstName(profileData.first_name || "");
+          setSavedLastName(profileData.last_name || "");
+          setSavedUsername(profileData.username || "");
+          setAvatarUrl(profileData.avatar_url || null);
         }
         setLoadingProfile(false);
       });
@@ -91,11 +100,19 @@ const Profile = () => {
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ first_name: firstName, last_name: lastName, username, updated_at: new Date().toISOString() } as any)
+      .update({ first_name: firstName, last_name: lastName, username, updated_at: new Date().toISOString() } as Record<string, unknown>)
       .eq("id", user.id);
     setSaving(false);
-    if (error) toast.error(error.message);
-    else toast.success("Profile saved!");
+    if (error) {
+      toast.error(error.message);
+    } else {
+      const nameToStore = firstName || username || user.email?.split("@")[0] || "there";
+      localStorage.setItem("fluxo_display_name", nameToStore);
+      setSavedFirstName(firstName);
+      setSavedLastName(lastName);
+      setSavedUsername(username);
+      toast.success("Profile saved!");
+    }
   };
 
   const updateSetting = (patch: Partial<SettingsData>) => {
@@ -152,7 +169,10 @@ const Profile = () => {
         <div className="w-full space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">First Name</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs text-muted-foreground block">First Name</label>
+                {savedFirstName && <span className="text-[10px] text-muted-foreground/60 italic truncate max-w-[80px]">Current: {savedFirstName}</span>}
+              </div>
               <Input
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
@@ -161,7 +181,10 @@ const Profile = () => {
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Last Name</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs text-muted-foreground block">Last Name</label>
+                {savedLastName && <span className="text-[10px] text-muted-foreground/60 italic truncate max-w-[80px]">Current: {savedLastName}</span>}
+              </div>
               <Input
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
@@ -171,7 +194,10 @@ const Profile = () => {
             </div>
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Username</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs text-muted-foreground block">Username</label>
+              {savedUsername && <span className="text-[10px] text-muted-foreground/60 italic">Current: {savedUsername}</span>}
+            </div>
             <Input
               value={username}
               onChange={(e) => setUsername(e.target.value)}

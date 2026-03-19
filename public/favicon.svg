@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="hsl(160, 60%, 60%)" />
+      <stop offset="100%" stop-color="hsl(260, 50%, 70%)" />
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="64" fill="url(#bg-grad)" />
+  <!-- Wallet icon -->
+  <g fill="none" stroke="hsl(240, 10%, 6%)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M216,88v96a16,16 0 0,1-16,16H56a16,16 0 0,1-16-16V72A16,16 0 0,1,56,56h128" />
+    <path d="M136,88h80v48h-80a24,24 0 0,1,0-48Z" fill="hsl(160, 60%, 60%)" opacity="0.3"/>
+    <path d="M136,88h80v48h-80a24,24 0 0,1,0-48Z" />
+    <circle cx="176" cy="112" r="12" fill="hsl(240, 10%, 6%)" stroke="none" />
+  </g>
+</svg>

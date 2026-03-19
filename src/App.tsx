@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import BottomNav from "@/components/BottomNav";
+import Sidebar from "@/components/Sidebar";
 import Index from "./pages/Index";
 import Insights from "./pages/Insights";
 import Profile from "./pages/Profile";
@@ -42,17 +43,20 @@ const AppRoutes = () => {
   const { user } = useAuth();
 
   return (
-    <>
-      <Routes>
-        <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
-        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-        <Route path="/insights" element={<ProtectedRoute><Insights /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/settings" element={<Navigate to="/profile" replace />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      {user && <BottomNav />}
-    </>
+    <div className={user ? "flex h-screen w-full bg-background overflow-hidden" : ""}>
+      {user && <Sidebar />}
+      <div className={user ? "flex-1 h-full overflow-y-auto relative w-full" : ""}>
+        <Routes>
+          <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
+          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/insights" element={<ProtectedRoute><Insights /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/settings" element={<Navigate to="/profile" replace />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        {user && <BottomNav />}
+      </div>
+    </div>
   );
 };
 

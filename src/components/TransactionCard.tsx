@@ -30,7 +30,7 @@ const TransactionCard = ({ expense, index, onTap, customCategories }: Transactio
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
       onClick={() => onTap(expense)}
-      className="flex items-center gap-3 glass-card p-4 min-w-[260px] snap-start text-left"
+      className="flex items-center gap-3 glass-card p-4 min-w-[260px] snap-start text-left hover:bg-muted/30 hover:shadow-lg transition-all duration-200"
     >
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${colorMap[cat.color] ?? colorMap.mint}`}>
         <CategoryIcon categoryId={expense.category} customIcon={cat.icon} size={22} />

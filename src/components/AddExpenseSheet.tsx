@@ -81,8 +81,8 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
       setShowNewCategory(false);
       setNewCatLabel("");
       toast.success("Category created!");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error((err as Error).message);
     }
   };
 
@@ -112,8 +112,8 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
       onAdded();
       onClose();
       toast.success("Expense added!");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -151,8 +151,9 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
 
             {/* Title */}
             <div className="mb-4">
-              <label className="text-sm text-muted-foreground mb-1.5 block">Title</label>
+              <label htmlFor="title" className="text-sm text-muted-foreground mb-1.5 block">Title</label>
               <input
+                id="title"
                 type="text"
                 placeholder="What did you spend on?"
                 value={title}
@@ -163,8 +164,9 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
 
             {/* Description */}
             <div className="mb-4">
-              <label className="text-sm text-muted-foreground mb-1.5 block">Description <span className="text-muted-foreground/50">(optional)</span></label>
+              <label htmlFor="description" className="text-sm text-muted-foreground mb-1.5 block">Description <span className="text-muted-foreground/50">(optional)</span></label>
               <textarea
+                id="description"
                 placeholder="Add a note or description..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -175,10 +177,11 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
 
             {/* Amount */}
             <div className="mb-4">
-              <label className="text-sm text-muted-foreground mb-1.5 block">Amount</label>
+              <label htmlFor="amount" className="text-sm text-muted-foreground mb-1.5 block">Amount</label>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-display font-bold text-muted-foreground">$</span>
                 <input
+                  id="amount"
                   type="number"
                   inputMode="decimal"
                   placeholder="0.00"
@@ -191,10 +194,11 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
 
             {/* Date */}
             <div className="mb-4">
-              <label className="text-sm text-muted-foreground mb-1.5 block">Date</label>
+              <label htmlFor="date" className="text-sm text-muted-foreground mb-1.5 block">Date</label>
               <div className="relative">
                 <CalendarBlank size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  id="date"
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
@@ -217,10 +221,10 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
                   </button>
                 </div>
               ) : (
-                <label className="flex items-center gap-2 h-11 rounded-xl bg-muted px-4 cursor-pointer text-muted-foreground hover:text-foreground transition-colors text-sm">
+                <label htmlFor="receipt-upload" className="flex items-center gap-2 h-11 rounded-xl bg-muted px-4 cursor-pointer text-muted-foreground hover:text-foreground transition-colors text-sm">
                   <Camera size={18} />
                   <span>Add photo</span>
-                  <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                  <input id="receipt-upload" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                 </label>
               )}
             </div>
@@ -263,7 +267,9 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
                 >
                   <div className="glass-card p-4 space-y-3">
                     <h4 className="font-display font-bold text-sm text-foreground">New Category</h4>
+                    <label htmlFor="new-cat-label" className="sr-only">New Category Name</label>
                     <input
+                      id="new-cat-label"
                       type="text"
                       placeholder="Category name"
                       value={newCatLabel}

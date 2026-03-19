@@ -13,7 +13,7 @@ const BottomNav = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 flex justify-center pb-safe">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-center pb-safe">
       <div className="mx-4 mb-4 flex gap-2 rounded-2xl bg-card/80 backdrop-blur-xl border border-glass-border p-2 shadow-2xl">
         {tabs.map((tab) => {
           const active = location.pathname === tab.path;
