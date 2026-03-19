@@ -58,6 +58,8 @@ const Profile = () => {
       .single()
       .then(({ data, error }) => {
         if (data) {
+          setFirstName((data as any).first_name || "");
+          setLastName((data as any).last_name || "");
           setUsername(data.username || "");
           setAvatarUrl(data.avatar_url);
         }
