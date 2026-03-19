@@ -39,6 +39,8 @@ const Profile = () => {
   const { user, signOut } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
