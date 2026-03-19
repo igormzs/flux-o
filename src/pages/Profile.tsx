@@ -150,6 +150,26 @@ const Profile = () => {
         </div>
         <p className="text-xs text-muted-foreground mb-3">{user?.email}</p>
         <div className="w-full space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">First Name</label>
+              <Input
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="First name"
+                className="bg-muted border-none text-foreground h-10"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Last Name</label>
+              <Input
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Last name"
+                className="bg-muted border-none text-foreground h-10"
+              />
+            </div>
+          </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Username</label>
             <Input
