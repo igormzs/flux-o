@@ -18,8 +18,15 @@ const Dashboard = () => {
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [loading, setLoading] = useState(true);
   const [displayName, setDisplayName] = useState(() => localStorage.getItem("fluxo_display_name") || "");
+
+  const handleEditClick = (expense: Expense) => {
+    setExpenseToEdit(expense);
+    setSelectedExpense(null); // Close Details Sheet
+    setShowAdd(true); // Open Edit Sheet
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -133,18 +140,24 @@ const Dashboard = () => {
       <motion.button
         whileTap={{ scale: 0.85 }}
         whileHover={{ scale: 1.05 }}
-        onClick={() => setShowAdd(true)}
+        onClick={() => { setExpenseToEdit(null); setShowAdd(true); }}
         className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center z-40"
       >
         <Plus size={24} weight="bold" />
       </motion.button>
 
-      <AddExpenseSheet open={showAdd} onClose={() => setShowAdd(false)} onAdded={refresh} />
+      <AddExpenseSheet 
+        open={showAdd} 
+        onClose={() => { setShowAdd(false); setExpenseToEdit(null); }} 
+        onAdded={refresh} 
+        expense={expenseToEdit} 
+      />
       <ExpenseDetailSheet
         expense={selectedExpense}
         open={!!selectedExpense}
         onClose={() => setSelectedExpense(null)}
         onDelete={handleDelete}
+        onEdit={handleEditClick}
         customCategories={customCategories}
       />
     </div>

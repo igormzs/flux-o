@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Camera, CalendarBlank } from "@phosphor-icons/react";
-import { DEFAULT_CATEGORIES, saveExpense, getCustomCategories, createCustomCategory, uploadExpenseImage, CustomCategory } from "@/lib/expenses";
+import { DEFAULT_CATEGORIES, saveExpense, updateExpense, getCustomCategories, createCustomCategory, uploadExpenseImage, CustomCategory, Expense } from "@/lib/expenses";
 import CategoryIcon from "./CategoryIcon";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -41,9 +41,10 @@ interface AddExpenseSheetProps {
   open: boolean;
   onClose: () => void;
   onAdded: () => void;
+  expense?: Expense | null;
 }
 
-const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
+const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -61,8 +62,27 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
   useEffect(() => {
     if (open) {
       getCustomCategories().then(setCustomCategories).catch(console.error);
+      
+      if (expense) {
+        setTitle(expense.title);
+        setDescription(expense.note || "");
+        setAmount(expense.amount.toString());
+        setCategory(expense.category);
+        setDate(format(new Date(expense.date), "yyyy-MM-dd"));
+        setImagePreview(expense.image_url);
+        setImageFile(null); // Reset file upload
+      } else {
+        // Reset form for addition
+        setTitle("");
+        setDescription("");
+        setAmount("");
+        setCategory("");
+        setDate(format(new Date(), "yyyy-MM-dd"));
+        setImageFile(null);
+        setImagePreview(null);
+      }
     }
-  }, [open]);
+  }, [open, expense]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -90,18 +110,28 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
     if (!amount || !category || !title.trim()) return;
     setLoading(true);
     try {
-      let imageUrl: string | null = null;
+      let imageUrl = imagePreview; // Re-use old image URL unless changed
       if (imageFile) {
         imageUrl = await uploadExpenseImage(imageFile);
       }
-      await saveExpense({
+
+      const payload = {
         title: title.trim(),
         amount: parseFloat(amount),
         category,
         note: description.trim() || undefined,
         date: new Date(date).toISOString(),
         image_url: imageUrl,
-      });
+      };
+
+      if (expense) {
+        await updateExpense(expense.id, payload);
+        toast.success("Expense updated!");
+      } else {
+        await saveExpense(payload);
+        toast.success("Expense added!");
+      }
+
       setTitle("");
       setDescription("");
       setAmount("");
@@ -111,7 +141,6 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
       setImagePreview(null);
       onAdded();
       onClose();
-      toast.success("Expense added!");
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -143,7 +172,9 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
             className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-glass-border rounded-t-3xl p-6 pb-10 max-h-[90vh] overflow-auto scrollbar-none"
           >
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-display font-bold text-xl text-foreground">Add Expense</h2>
+              <h2 className="font-display font-bold text-xl text-foreground">
+                {expense ? "Edit Expense" : "Add Expense"}
+              </h2>
               <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                 <X size={16} weight="bold" />
               </button>
@@ -196,13 +227,13 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
             <div className="mb-4">
               <label htmlFor="date" className="text-sm text-muted-foreground mb-1.5 block">Date</label>
               <div className="relative">
-                <CalendarBlank size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <CalendarBlank size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
                 <input
                   id="date"
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full h-11 rounded-xl bg-muted border-none pl-10 pr-4 text-foreground outline-none focus:ring-2 focus:ring-primary/30 text-sm"
+                  className="w-full h-11 rounded-xl bg-muted border-none pl-10 pr-4 text-foreground outline-none focus:ring-2 focus:ring-primary/30 text-sm [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3"
                 />
               </div>
             </div>
@@ -336,7 +367,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded }: AddExpenseSheetProps) => {
               disabled={!amount || !category || !title.trim() || loading}
               className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-display font-bold text-lg disabled:opacity-30 transition-opacity"
             >
-              {loading ? "Adding..." : "Add Expense"}
+              {loading ? (expense ? "Saving..." : "Adding...") : (expense ? "Save Changes" : "Add Expense")}
             </motion.button>
           </motion.div>
         </>

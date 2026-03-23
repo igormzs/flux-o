@@ -64,6 +64,25 @@ export async function saveExpense(expense: {
   return data as Expense;
 }
 
+export async function updateExpense(id: string, expense: {
+  title: string;
+  amount: number;
+  category: string;
+  custom_category_id?: string | null;
+  note?: string;
+  image_url?: string | null;
+  date: string;
+}) {
+  const { data, error } = await supabase
+    .from("expenses")
+    .update(expense)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Expense;
+}
+
 export async function deleteExpense(id: string) {
   const { error } = await supabase.from("expenses").delete().eq("id", id);
   if (error) throw error;

@@ -20,10 +20,11 @@ interface ExpenseDetailSheetProps {
   open: boolean;
   onClose: () => void;
   onDelete: (id: string) => void;
+  onEdit: (expense: Expense) => void;
   customCategories: CustomCategory[];
 }
 
-const ExpenseDetailSheet = ({ expense, open, onClose, onDelete, customCategories }: ExpenseDetailSheetProps) => {
+const ExpenseDetailSheet = ({ expense, open, onClose, onDelete, onEdit, customCategories }: ExpenseDetailSheetProps) => {
   if (!expense) return null;
   const cat = getCategoryInfo(expense.category, customCategories);
 
@@ -48,9 +49,18 @@ const ExpenseDetailSheet = ({ expense, open, onClose, onDelete, customCategories
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-display font-bold text-xl text-foreground">Expense Details</h2>
-              <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                <X size={16} weight="bold" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => onEdit(expense)} 
+                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                  title="Edit expense"
+                >
+                  <Pencil size={16} weight="bold" />
+                </button>
+                <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                  <X size={16} weight="bold" />
+                </button>
+              </div>
             </div>
 
             {/* Category & Amount */}
