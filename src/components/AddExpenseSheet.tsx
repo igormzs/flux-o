@@ -169,7 +169,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 35 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-glass-border rounded-t-3xl p-6 pb-10 max-h-[90vh] overflow-auto scrollbar-none"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-glass-border rounded-t-3xl p-6 pb-10 max-h-[90vh] overflow-auto scrollbar-none overflow-x-hidden touch-pan-y max-w-xl mx-auto"
           >
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-display font-bold text-xl text-foreground">

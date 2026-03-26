@@ -5,12 +5,13 @@
       <stop offset="100%" stop-color="hsl(260, 50%, 70%)" />
     </linearGradient>
   </defs>
-  <rect width="256" height="256" rx="64" fill="url(#bg-grad)" />
-  <!-- Wallet icon -->
-  <g fill="none" stroke="hsl(240, 10%, 6%)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M216,88v96a16,16 0 0,1-16,16H56a16,16 0 0,1-16-16V72A16,16 0 0,1,56,56h128" />
-    <path d="M136,88h80v48h-80a24,24 0 0,1,0-48Z" fill="hsl(160, 60%, 60%)" opacity="0.3"/>
-    <path d="M136,88h80v48h-80a24,24 0 0,1,0-48Z" />
-    <circle cx="176" cy="112" r="12" fill="hsl(240, 10%, 6%)" stroke="none" />
+  <rect width="256" height="256" rx="80" fill="url(#bg-grad)" />
+  <g transform="translate(48, 48) scale(0.625)">
+    <!-- Phosphor Wallet Duotone -->
+    <path d="M216,72H56a16,16,0,0,0-16,16V184a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A16,16,0,0,0,216,72Z" opacity="0.1" fill="hsl(240, 10%, 6%)" />
+    <path d="M216,72H56a16,16,0,0,0-16,16V184a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A16,16,0,0,0,216,72Z" fill="none" stroke="hsl(240, 10%, 6%)" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+    <path d="M136,136H216v48H136a24,24,0,0,1,0-48Z" opacity="0.2" fill="hsl(240, 10%, 6%)" />
+    <path d="M136,136H216v48H136a24,24,0,0,1,0-48Z" fill="none" stroke="hsl(240, 10%, 6%)" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+    <circle cx="176" cy="160" r="12" fill="hsl(240, 10%, 6%)" />
   </g>
 </svg>
