@@ -6,6 +6,12 @@ import { CURRENCIES, parseNote, stringifyNote } from "@/lib/currencies";
 import CategoryIcon from "./CategoryIcon";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const COLORS = ["mint", "teal", "lavender", "electric", "pink", "yellow", "peach", "coral"];
 
@@ -220,19 +226,30 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
               <div>
                 <label htmlFor="amount" className="text-sm text-muted-foreground mb-1.5 block">Amount</label>
                 <div className="flex items-center gap-2 bg-muted rounded-xl px-3 h-11 focus-within:ring-2 focus-within:ring-primary/30 transition-all">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const currentIndex = CURRENCIES.findIndex(c => c.code === currency);
-                      const nextIndex = (currentIndex + 1) % CURRENCIES.length;
-                      setCurrency(CURRENCIES[nextIndex].code);
-                    }}
-                    className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm border border-glass-border hover:bg-white/90 transition-all active:scale-95"
-                  >
-                    <span className="text-slate-900 font-bold text-base">
-                      {CURRENCIES.find(c => c.code === currency)?.symbol}
-                    </span>
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="w-8 h-8 flex items-center justify-center bg-white rounded-xl shadow-sm border border-glass-border hover:bg-white/90 transition-all active:scale-95 shrink-0"
+                      >
+                        <span className="text-slate-900 font-bold text-base">
+                          {CURRENCIES.find(c => c.code === currency)?.symbol}
+                        </span>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-48 bg-popover border-glass-border">
+                      {CURRENCIES.map((c) => (
+                        <DropdownMenuItem
+                          key={c.code}
+                          onClick={() => setCurrency(c.code)}
+                          className="flex items-center justify-between cursor-pointer py-2.5"
+                        >
+                          <span className="text-sm font-medium">{c.label}</span>
+                          <span className="text-xs text-muted-foreground font-bold">{c.symbol}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <input
                     id="amount"
                     type="number"
