@@ -28,7 +28,7 @@ export const DEFAULT_CATEGORIES = [
   { id: "grocery", label: "Grocery", icon: "ShoppingCart", color: "teal" },
   { id: "rent", label: "Rent", icon: "House", color: "lavender" },
   { id: "subscriptions", label: "Subs", icon: "Television", color: "electric" },
-  { id: "nightlife", label: "Nightlife", icon: "BeerBottle", color: "pink" },
+  { id: "nightlife", label: "Drinks", icon: "BeerBottle", color: "pink" },
   { id: "utilities", label: "Utilities", icon: "Plug", color: "yellow" },
   { id: "selfcare", label: "Self-care", icon: "Gift", color: "peach" },
   { id: "travel", label: "Travel", icon: "AirplaneTilt", color: "coral" },

@@ -215,18 +215,24 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
               />
             </div>
 
-            <div className="grid grid-cols-[1fr_0.65fr] gap-4 mb-4">
+            <div className="grid grid-cols-[1fr_minmax(130px,0.5fr)] gap-4 mb-4">
               {/* Amount */}
               <div>
                 <label htmlFor="amount" className="text-sm text-muted-foreground mb-1.5 block">Amount</label>
                 <div className="flex items-center gap-2 bg-muted rounded-xl px-3 h-11 focus-within:ring-2 focus-within:ring-primary/30 transition-all">
-                  <select 
-                    value={currency} 
-                    onChange={(e) => setCurrency(e.target.value)}
-                    className="bg-transparent text-foreground text-xs font-bold outline-none cursor-pointer border-r border-glass-border pr-2 py-1"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentIndex = CURRENCIES.findIndex(c => c.code === currency);
+                      const nextIndex = (currentIndex + 1) % CURRENCIES.length;
+                      setCurrency(CURRENCIES[nextIndex].code);
+                    }}
+                    className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm border border-glass-border hover:bg-white/90 transition-all active:scale-95"
                   >
-                    {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.symbol}</option>)}
-                  </select>
+                    <span className="text-slate-900 font-bold text-base">
+                      {CURRENCIES.find(c => c.code === currency)?.symbol}
+                    </span>
+                  </button>
                   <input
                     id="amount"
                     type="number"
@@ -242,14 +248,19 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
               {/* Date */}
               <div>
                 <label htmlFor="date" className="text-sm text-muted-foreground mb-1.5 block">Date</label>
-                <div className="relative">
-                  <CalendarBlank size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
+                <div className="relative h-11">
+                  <div className="absolute inset-0 flex items-center gap-2 bg-muted rounded-xl px-3 pointer-events-none transition-all">
+                    <CalendarBlank size={18} className="text-muted-foreground" />
+                    <span className="text-foreground text-sm font-medium">
+                      {format(new Date(date + "T00:00:00"), "dd/MM/yy")}
+                    </span>
+                  </div>
                   <input
                     id="date"
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full h-11 rounded-xl bg-muted border-none pl-10 pr-2 text-foreground outline-none focus:ring-2 focus:ring-primary/30 text-xs [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3"
+                    className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
                   />
                 </div>
               </div>
