@@ -215,7 +215,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-[1fr_0.65fr] gap-4 mb-4">
               {/* Amount */}
               <div>
                 <label htmlFor="amount" className="text-sm text-muted-foreground mb-1.5 block">Amount</label>
