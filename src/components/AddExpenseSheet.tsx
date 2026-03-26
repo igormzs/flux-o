@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Camera, CalendarBlank } from "@phosphor-icons/react";
 import { DEFAULT_CATEGORIES, saveExpense, updateExpense, getCustomCategories, createCustomCategory, uploadExpenseImage, CustomCategory, Expense } from "@/lib/expenses";
+import { CURRENCIES, parseNote, stringifyNote } from "@/lib/currencies";
 import CategoryIcon from "./CategoryIcon";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -33,7 +34,7 @@ const selectedMap: Record<string, string> = {
   electric: "bg-electric text-primary-foreground",
   pink: "bg-pink text-primary-foreground",
   yellow: "bg-yellow text-primary-foreground",
-  peach: "bg-peach text-primary-foreground",
+  peach: "bg-pink text-primary-foreground",
   coral: "bg-coral text-primary-foreground",
 };
 
@@ -48,6 +49,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState("USD");
   const [category, setCategory] = useState("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -62,10 +64,16 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
   useEffect(() => {
     if (open) {
       getCustomCategories().then(setCustomCategories).catch(console.error);
+
+      // Load global currency default
+      const rawSettings = localStorage.getItem("fluxo_settings");
+      const globalCurrency = rawSettings ? JSON.parse(rawSettings).currency : "USD";
       
       if (expense) {
         setTitle(expense.title);
-        setDescription(expense.note || "");
+        const { currency: expCurrency, note: expNote } = parseNote(expense.note);
+        setCurrency(expCurrency || globalCurrency);
+        setDescription(expNote);
         setAmount(expense.amount.toString());
         setCategory(expense.category);
         setDate(format(new Date(expense.date), "yyyy-MM-dd"));
@@ -76,6 +84,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
         setTitle("");
         setDescription("");
         setAmount("");
+        setCurrency(globalCurrency);
         setCategory("");
         setDate(format(new Date(), "yyyy-MM-dd"));
         setImageFile(null);
@@ -119,7 +128,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
         title: title.trim(),
         amount: parseFloat(amount),
         category,
-        note: description.trim() || undefined,
+        note: stringifyNote(currency, description.trim()),
         date: new Date(date).toISOString(),
         image_url: imageUrl,
       };
@@ -169,7 +178,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 35 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-glass-border rounded-t-3xl p-6 pb-10 max-h-[90vh] overflow-auto scrollbar-none overflow-x-hidden touch-pan-y max-w-xl mx-auto"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-glass-border rounded-t-3xl p-6 pb-10 max-h-[82vh] overflow-auto scrollbar-none overflow-x-hidden touch-pan-y max-w-xl mx-auto"
           >
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-display font-bold text-xl text-foreground">
@@ -206,35 +215,43 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
               />
             </div>
 
-            {/* Amount */}
-            <div className="mb-4">
-              <label htmlFor="amount" className="text-sm text-muted-foreground mb-1.5 block">Amount</label>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-display font-bold text-muted-foreground">$</span>
-                <input
-                  id="amount"
-                  type="number"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="bg-transparent text-3xl font-display font-bold text-foreground outline-none w-full placeholder:text-muted-foreground/30"
-                />
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              {/* Amount */}
+              <div>
+                <label htmlFor="amount" className="text-sm text-muted-foreground mb-1.5 block">Amount</label>
+                <div className="flex items-center gap-2 bg-muted rounded-xl px-3 h-11 focus-within:ring-2 focus-within:ring-primary/30 transition-all">
+                  <select 
+                    value={currency} 
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="bg-transparent text-foreground text-xs font-bold outline-none cursor-pointer border-r border-glass-border pr-2 py-1"
+                  >
+                    {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.symbol}</option>)}
+                  </select>
+                  <input
+                    id="amount"
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="bg-transparent text-lg font-display font-bold text-foreground outline-none w-full placeholder:text-muted-foreground/30 px-1"
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Date */}
-            <div className="mb-4">
-              <label htmlFor="date" className="text-sm text-muted-foreground mb-1.5 block">Date</label>
-              <div className="relative">
-                <CalendarBlank size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
-                <input
-                  id="date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full h-11 rounded-xl bg-muted border-none pl-10 pr-4 text-foreground outline-none focus:ring-2 focus:ring-primary/30 text-sm [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3"
-                />
+              {/* Date */}
+              <div>
+                <label htmlFor="date" className="text-sm text-muted-foreground mb-1.5 block">Date</label>
+                <div className="relative">
+                  <CalendarBlank size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
+                  <input
+                    id="date"
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full h-11 rounded-xl bg-muted border-none pl-10 pr-2 text-foreground outline-none focus:ring-2 focus:ring-primary/30 text-xs [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3"
+                  />
+                </div>
               </div>
             </div>
 

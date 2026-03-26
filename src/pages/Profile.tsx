@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import { ArrowLeft, Camera, User, SignOut, Trash } from "@phosphor-icons/react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Camera, User, SignOut, Trash, Check } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,15 +8,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-
-const CURRENCIES = [
-  { code: "USD", symbol: "$", label: "US Dollar" },
-  { code: "EUR", symbol: "€", label: "Euro" },
-  { code: "GBP", symbol: "£", label: "British Pound" },
-  { code: "BRL", symbol: "R$", label: "Brazilian Real" },
-  { code: "JPY", symbol: "¥", label: "Japanese Yen" },
-  { code: "CAD", symbol: "CA$", label: "Canadian Dollar" },
-];
+import { CURRENCIES } from "@/lib/currencies";
 
 interface SettingsData {
   budgetGoal: number;
@@ -43,16 +35,12 @@ const Profile = () => {
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
   
-  const [savedFirstName, setSavedFirstName] = useState("");
-  const [savedLastName, setSavedLastName] = useState("");
-  const [savedUsername, setSavedUsername] = useState("");
-  
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [settings, setSettings] = useState<SettingsData>(loadSettings);
-
-  useEffect(() => { saveSettingsLocal(settings); }, [settings]);
+  const [pendingSettings, setPendingSettings] = useState<SettingsData>(loadSettings);
 
   useEffect(() => {
     if (!user) return;
@@ -67,9 +55,6 @@ const Profile = () => {
           setFirstName(profileData.first_name || "");
           setLastName(profileData.last_name || "");
           setUsername(profileData.username || "");
-          setSavedFirstName(profileData.first_name || "");
-          setSavedLastName(profileData.last_name || "");
-          setSavedUsername(profileData.username || "");
           setAvatarUrl(profileData.avatar_url || null);
         }
         setLoadingProfile(false);
@@ -108,21 +93,26 @@ const Profile = () => {
     } else {
       const nameToStore = firstName || username || user.email?.split("@")[0] || "there";
       localStorage.setItem("fluxo_display_name", nameToStore);
-      setSavedFirstName(firstName);
-      setSavedLastName(lastName);
-      setSavedUsername(username);
       toast.success("Profile saved!");
     }
   };
 
-  const updateSetting = (patch: Partial<SettingsData>) => {
-    setSettings((prev) => ({ ...prev, ...patch }));
-    toast.success("Settings saved");
+  const handleSaveSettings = () => {
+    setSavingSettings(true);
+    saveSettingsLocal(pendingSettings);
+    setSettings(pendingSettings);
+    setTimeout(() => {
+      setSavingSettings(false);
+      toast.success("Settings saved!");
+    }, 500);
   };
 
-  const updateNotif = (key: keyof SettingsData["notifications"], val: boolean) => {
-    setSettings((prev) => ({ ...prev, notifications: { ...prev.notifications, [key]: val } }));
-    toast.success("Settings saved");
+  const updatePendingSetting = (patch: Partial<SettingsData>) => {
+    setPendingSettings((prev) => ({ ...prev, ...patch }));
+  };
+
+  const updatePendingNotif = (key: keyof SettingsData["notifications"], val: boolean) => {
+    setPendingSettings((prev) => ({ ...prev, notifications: { ...prev.notifications, [key]: val } }));
   };
 
   const handleSignOut = async () => { await signOut(); };
@@ -169,10 +159,7 @@ const Profile = () => {
         <div className="w-full space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs text-muted-foreground block">First Name</label>
-                {savedFirstName && <span className="text-[10px] text-muted-foreground/60 italic truncate max-w-[80px]">Current: {savedFirstName}</span>}
-              </div>
+              <label className="text-xs text-muted-foreground block mb-1">First Name</label>
               <Input
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
@@ -181,10 +168,7 @@ const Profile = () => {
               />
             </div>
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs text-muted-foreground block">Last Name</label>
-                {savedLastName && <span className="text-[10px] text-muted-foreground/60 italic truncate max-w-[80px]">Current: {savedLastName}</span>}
-              </div>
+              <label className="text-xs text-muted-foreground block mb-1">Last Name</label>
               <Input
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
@@ -194,10 +178,7 @@ const Profile = () => {
             </div>
           </div>
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-muted-foreground block">Username</label>
-              {savedUsername && <span className="text-[10px] text-muted-foreground/60 italic">Current: {savedUsername}</span>}
-            </div>
+            <label className="text-xs text-muted-foreground block mb-1">Username</label>
             <Input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -216,24 +197,54 @@ const Profile = () => {
         </div>
       </motion.div>
 
-      {/* Budget Goal */}
+      {/* App Settings */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="glass-card p-4 mb-4">
-        <h3 className="font-display font-bold text-foreground text-sm mb-3">Monthly Budget Goal</h3>
-        <div className="flex items-center gap-3">
-          <span className="text-muted-foreground text-lg font-medium">{CURRENCIES.find((c) => c.code === settings.currency)?.symbol || "$"}</span>
-          <Input type="number" value={settings.budgetGoal} onChange={(e) => updateSetting({ budgetGoal: Number(e.target.value) })} className="bg-muted border-none text-foreground font-display font-bold text-lg h-10" />
-        </div>
-      </motion.div>
+        <h3 className="font-display font-bold text-foreground text-sm mb-4">App Settings</h3>
+        
+        <div className="space-y-6">
+          {/* Monthly Budget */}
+          <div>
+            <label className="text-xs text-muted-foreground block mb-2">Monthly Budget Goal</label>
+            <div className="flex items-center gap-3 bg-muted rounded-xl px-4 h-11">
+              <span className="text-muted-foreground text-lg font-medium">{CURRENCIES.find((c) => c.code === pendingSettings.currency)?.symbol || "$"}</span>
+              <Input 
+                type="number" 
+                value={pendingSettings.budgetGoal} 
+                onChange={(e) => updatePendingSetting({ budgetGoal: Number(e.target.value) })} 
+                className="bg-transparent border-none text-foreground font-display font-bold text-lg h-full p-0 focus-visible:ring-0" 
+              />
+            </div>
+          </div>
 
-      {/* Currency */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-4 mb-4">
-        <h3 className="font-display font-bold text-foreground text-sm mb-3">Currency</h3>
-        <div className="grid grid-cols-3 gap-2">
-          {CURRENCIES.map((c) => (
-            <button key={c.code} onClick={() => updateSetting({ currency: c.code })} className={`rounded-xl px-3 py-2 text-xs font-medium transition-all ${settings.currency === c.code ? "bg-primary/20 text-primary border border-primary/30" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-              <span className="block text-base">{c.symbol}</span>{c.code}
-            </button>
-          ))}
+          {/* Currency Selector */}
+          <div>
+            <label className="text-xs text-muted-foreground block mb-2">Primary Currency</label>
+            <div className="grid grid-cols-3 gap-2">
+              {CURRENCIES.map((c) => (
+                <button 
+                  key={c.code} 
+                  onClick={() => updatePendingSetting({ currency: c.code })} 
+                  className={`rounded-xl px-3 py-2 text-xs font-medium transition-all ${pendingSettings.currency === c.code ? "bg-primary/20 text-primary border border-primary/30" : "bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent"}`}
+                >
+                  <span className="block text-base">{c.symbol}</span>{c.code}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={handleSaveSettings}
+            disabled={savingSettings}
+            className="w-full h-10 rounded-xl bg-primary/10 text-primary border border-primary/20 font-display font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
+          >
+            {savingSettings ? "Saving..." : (
+              <>
+                <Check size={16} weight="bold" />
+                Save Settings
+              </>
+            )}
+          </motion.button>
         </div>
       </motion.div>
 
@@ -251,7 +262,7 @@ const Profile = () => {
                 <p className="text-foreground text-sm font-medium">{item.label}</p>
                 <p className="text-muted-foreground text-xs">{item.desc}</p>
               </div>
-              <Switch checked={settings.notifications[item.key]} onCheckedChange={(val) => updateNotif(item.key, val)} />
+              <Switch checked={pendingSettings.notifications[item.key]} onCheckedChange={(val) => updatePendingNotif(item.key, val)} />
             </div>
           ))}
         </div>
@@ -260,12 +271,12 @@ const Profile = () => {
       {/* Account actions */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-4 space-y-3">
         <button onClick={handleSignOut} className="flex items-center gap-2 text-muted-foreground text-sm font-medium hover:text-foreground transition-colors w-full">
-          <SignOut size={18} weight="duotone" />
+          <SignOut size={18} weight="bold" />
           Sign out
         </button>
         <div className="border-t border-glass-border pt-3">
           <button onClick={() => toast.success("Data cleared")} className="flex items-center gap-2 text-destructive text-sm font-medium hover:opacity-80 transition-opacity">
-            <Trash size={18} weight="duotone" />
+            <Trash size={18} weight="bold" />
             Clear all expense data
           </button>
         </div>

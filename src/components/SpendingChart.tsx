@@ -6,6 +6,7 @@ import type { Expense } from "@/lib/expenses";
 import CategoryExpensesSheet from "./CategoryExpensesSheet";
 import CategoryIcon from "./CategoryIcon";
 import { ChartDonut, ChartBar, TrendUp } from "@phosphor-icons/react";
+import { getCurrencySymbol } from "@/lib/currencies";
 
 type ChartType = "donut" | "bar" | "progress";
 
@@ -28,6 +29,9 @@ interface SpendingChartProps {
 const SpendingChart = ({ expenses, customCategories }: SpendingChartProps) => {
   const [chartType, setChartType] = useState<ChartType>("donut");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const settings = JSON.parse(localStorage.getItem("fluxo_settings") || "{}");
+  const currencySymbol = getCurrencySymbol(settings.currency || "USD");
 
   // Group by category
   const categoryIds = new Set(expenses.map((e) => e.category));
@@ -93,7 +97,7 @@ const SpendingChart = ({ expenses, customCategories }: SpendingChartProps) => {
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <span className="text-[10px] text-muted-foreground">Total</span>
-                  <span className="font-display font-bold text-sm text-foreground">${total.toFixed(0)}</span>
+                  <span className="font-display font-bold text-sm text-foreground">{currencySymbol}{total.toFixed(0)}</span>
                 </div>
               </div>
               <div className="flex flex-col gap-2 flex-1 min-w-0">
@@ -127,7 +131,7 @@ const SpendingChart = ({ expenses, customCategories }: SpendingChartProps) => {
                     const d = payload[0].payload;
                     return (
                       <div className="bg-card border border-glass-border rounded-xl px-3 py-2 text-xs shadow-xl">
-                        <span className="font-medium text-foreground">{d.name}: ${d.value.toFixed(2)}</span>
+                        <span className="font-medium text-foreground">{d.name}: {currencySymbol}{d.value.toFixed(2)}</span>
                       </div>
                     );
                   }} />
@@ -152,7 +156,7 @@ const SpendingChart = ({ expenses, customCategories }: SpendingChartProps) => {
                         <CategoryIcon categoryId={d.id} customIcon={d.icon} size={16} />
                         <span className="font-medium text-foreground">{d.name}</span>
                       </span>
-                      <span className="font-display font-bold text-foreground">${d.value.toFixed(2)}</span>
+                      <span className="font-display font-bold text-foreground">{currencySymbol}{d.value.toFixed(2)}</span>
                     </div>
                     <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                       <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6, delay: 0.1 }} className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${GRADIENT_COLORS[d.color]?.from ?? "#888"}, ${GRADIENT_COLORS[d.color]?.to ?? "#666"})` }} />
@@ -170,6 +174,7 @@ const SpendingChart = ({ expenses, customCategories }: SpendingChartProps) => {
         onClose={() => setSelectedCategory(null)}
         categoryId={selectedCategory || ""}
         expenses={expenses}
+        customCategories={customCategories}
       />
     </>
   );

@@ -1,8 +1,9 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, CalendarBlank, Pencil, Trash } from "@phosphor-icons/react";
-import { Expense, getCategoryInfo, CustomCategory } from "@/lib/expenses";
-import CategoryIcon from "./CategoryIcon";
+import { X, CalendarBlank, PencilSimple, Trash } from "@phosphor-icons/react";
 import { format } from "date-fns";
+import { Expense, CustomCategory, getCategoryInfo } from "@/lib/expenses";
+import CategoryIcon from "./CategoryIcon";
+import { getCurrencySymbol, parseNote } from "@/lib/currencies";
 
 const colorMap: Record<string, string> = {
   mint: "bg-mint/15 text-mint",
@@ -27,6 +28,10 @@ interface ExpenseDetailSheetProps {
 const ExpenseDetailSheet = ({ expense, open, onClose, onDelete, onEdit, customCategories }: ExpenseDetailSheetProps) => {
   if (!expense) return null;
   const cat = getCategoryInfo(expense.category, customCategories);
+  const { currency, note: cleanDescription } = parseNote(expense.note);
+  const settings = JSON.parse(localStorage.getItem("fluxo_settings") || "{}");
+  const displayCurrency = currency || settings.currency || "USD";
+  const symbol = getCurrencySymbol(displayCurrency);
 
   return (
     <AnimatePresence>
@@ -44,7 +49,7 @@ const ExpenseDetailSheet = ({ expense, open, onClose, onDelete, onEdit, customCa
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 35 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-glass-border rounded-t-3xl p-6 pb-10 max-h-[85vh] overflow-auto scrollbar-none"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-glass-border rounded-t-3xl p-6 pb-10 max-h-[85vh] overflow-auto scrollbar-none max-w-xl mx-auto"
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
@@ -52,10 +57,10 @@ const ExpenseDetailSheet = ({ expense, open, onClose, onDelete, onEdit, customCa
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => onEdit(expense)} 
-                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                  className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
                   title="Edit expense"
                 >
-                  <Pencil size={16} weight="bold" />
+                  <PencilSimple size={18} weight="bold" />
                 </button>
                 <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                   <X size={16} weight="bold" />
@@ -64,13 +69,15 @@ const ExpenseDetailSheet = ({ expense, open, onClose, onDelete, onEdit, customCa
             </div>
 
             {/* Category & Amount */}
-            <div className="flex items-center gap-4 mb-6">
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${colorMap[cat.color] ?? colorMap.mint}`}>
-                <CategoryIcon categoryId={expense.category} customIcon={cat.icon} size={28} />
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center text-3xl border border-glass-border">
+                <CategoryIcon categoryId={expense.category} customIcon={cat.icon} size={32} />
               </div>
-              <div className="flex-1">
-                <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">{cat.label}</p>
-                <p className="font-display font-bold text-3xl text-foreground">${Number(expense.amount).toFixed(2)}</p>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">{cat.label}</p>
+                <p className="text-4xl font-display font-bold text-foreground slashed-zero">
+                  {symbol}{Number(expense.amount).toFixed(2)}
+                </p>
               </div>
             </div>
 
@@ -81,10 +88,10 @@ const ExpenseDetailSheet = ({ expense, open, onClose, onDelete, onEdit, customCa
                 <p className="text-foreground font-medium">{expense.title}</p>
               </div>
 
-              {expense.note && (
+              {cleanDescription && (
                 <div className="glass-card p-4">
                   <p className="text-xs text-muted-foreground mb-1">Description</p>
-                  <p className="text-foreground text-sm">{expense.note}</p>
+                  <p className="text-foreground text-sm">{cleanDescription}</p>
                 </div>
               )}
 

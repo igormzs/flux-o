@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Expense, getCategoryInfo, CustomCategory } from "@/lib/expenses";
 import { format } from "date-fns";
 import CategoryIcon from "./CategoryIcon";
+import { getCurrencySymbol, parseNote } from "@/lib/currencies";
 
 interface TransactionCardProps {
   expense: Expense;
@@ -23,6 +24,10 @@ const colorMap: Record<string, string> = {
 
 const TransactionCard = ({ expense, index, onTap, customCategories }: TransactionCardProps) => {
   const cat = getCategoryInfo(expense.category, customCategories);
+  const { currency } = parseNote(expense.note);
+  const settings = JSON.parse(localStorage.getItem("fluxo_settings") || "{}");
+  const displayCurrency = currency || settings.currency || "USD";
+  const symbol = getCurrencySymbol(displayCurrency);
 
   return (
     <motion.button
@@ -39,7 +44,9 @@ const TransactionCard = ({ expense, index, onTap, customCategories }: Transactio
         <p className="font-medium text-foreground text-sm truncate">{expense.title}</p>
         <p className="text-xs text-muted-foreground">{format(new Date(expense.date), "MMM d, h:mm a")}</p>
       </div>
-      <p className="font-display font-bold text-foreground text-sm shrink-0">-${Number(expense.amount).toFixed(2)}</p>
+      <p className="font-display font-bold text-foreground text-sm shrink-0">
+        -{symbol}{Number(expense.amount).toFixed(2)}
+      </p>
     </motion.button>
   );
 };
