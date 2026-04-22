@@ -99,7 +99,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-8 px-4 md:px-8 pt-4 md:pt-8 w-full max-w-7xl mx-auto overflow-x-hidden">
+    <div className="min-h-screen bg-background pb-24 px-8 pt-8 w-full max-w-7xl mx-auto overflow-x-hidden">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between mb-8">
         <div>
           <p className="text-muted-foreground text-sm flex items-center gap-1.5">

@@ -128,7 +128,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-28 px-4 pt-4 max-w-lg mx-auto">
+    <div className="min-h-screen bg-background pb-24 px-8 pt-8 max-w-lg mx-auto">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
