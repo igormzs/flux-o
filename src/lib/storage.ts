@@ -8,12 +8,12 @@ export interface Expense {
 
 export const CATEGORIES = [
   { id: "food", label: "Food", emoji: "🍕", color: "mint" },
-  { id: "grocery", label: "Grocery", emoji: "🛒", color: "teal" },
+  { id: "grocery", label: "Grocery", emoji: "🛒", color: "peach" },
   { id: "rent", label: "Rent", emoji: "🏠", color: "lavender" },
   { id: "subscriptions", label: "Subs", emoji: "📺", color: "electric" },
   { id: "nightlife", label: "Nightlife", emoji: "🍻", color: "pink" },
   { id: "utilities", label: "Utilities", emoji: "🔌", color: "yellow" },
-  { id: "selfcare", label: "Self-care", emoji: "🎁", color: "peach" },
+  { id: "selfcare", label: "Self-care", emoji: "🎁", color: "teal" },
   { id: "travel", label: "Travel", emoji: "✈️", color: "coral" },
 ] as const;
 

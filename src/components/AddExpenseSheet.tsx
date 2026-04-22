@@ -40,7 +40,7 @@ const selectedMap: Record<string, string> = {
   electric: "bg-electric text-primary-foreground",
   pink: "bg-pink text-primary-foreground",
   yellow: "bg-yellow text-primary-foreground",
-  peach: "bg-pink text-primary-foreground",
+  peach: "bg-peach text-primary-foreground",
   coral: "bg-coral text-primary-foreground",
 };
 
@@ -130,12 +130,22 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
         imageUrl = await uploadExpenseImage(imageFile);
       }
 
+      const [y, m, d] = date.split("-").map(Number);
+      const now = new Date();
+      const baseDate = expense ? new Date(expense.date) : now;
+      const finalDate = new Date(baseDate);
+      finalDate.setFullYear(y, m - 1, d);
+      
+      // If it's a new expense and the date is today, use exactly "now" to keep time precise
+      const isToday = date === format(now, "yyyy-MM-dd");
+      const dateToSave = (!expense && isToday) ? now.toISOString() : finalDate.toISOString();
+
       const payload = {
         title: title.trim(),
         amount: parseFloat(amount),
         category,
         note: stringifyNote(currency, description.trim()),
-        date: new Date(date).toISOString(),
+        date: dateToSave,
         image_url: imageUrl,
       };
 

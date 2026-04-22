@@ -164,3 +164,7 @@
     @apply bg-gradient-to-r from-mint via-lavender to-pink bg-clip-text text-transparent;
   }
 }
+
+[data-sonner-toaster] {
+  margin-bottom: 100px !important;
+}

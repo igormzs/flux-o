@@ -11,6 +11,11 @@ import ExpenseDetailSheet from "@/components/ExpenseDetailSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { getPeriodRange } from "@/lib/date-utils";
+import { isWithinInterval, format } from "date-fns";
+import { Link } from "react-router-dom";
+import { User } from "@phosphor-icons/react";
+import { getCurrencySymbol } from "@/lib/currencies";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -20,6 +25,7 @@ const Dashboard = () => {
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<{ first_name?: string; last_name?: string; username?: string; avatar_url?: string | null }>({});
   const [displayName, setDisplayName] = useState(() => localStorage.getItem("fluxo_display_name") || "");
 
   const handleEditClick = (expense: Expense) => {
@@ -30,12 +36,21 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("first_name, username").eq("id", user.id).single().then(({ data }) => {
-      const name = (data as Record<string, unknown>)?.first_name as string || data?.username || user.email?.split("@")[0] || "there";
-      setDisplayName(name);
-      localStorage.setItem("fluxo_display_name", name);
+    supabase.from("profiles").select("first_name, last_name, username, avatar_url").eq("id", user.id).single().then(({ data }) => {
+      if (data) {
+        setProfile(data);
+        const name = data.first_name || data.username || user.email?.split("@")[0] || "there";
+        setDisplayName(name);
+        localStorage.setItem("fluxo_display_name", name);
+      }
     });
   }, [user]);
+
+  const initials = profile.first_name && profile.last_name 
+    ? `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase()
+    : profile.first_name 
+      ? profile.first_name.substring(0, 2).toUpperCase()
+      : "IM";
 
   const refresh = useCallback(async () => {
     try {
@@ -60,13 +75,20 @@ const Dashboard = () => {
     }
   };
 
-  const now = new Date();
-  const thisMonthExpenses = expenses.filter((e) => {
-    const d = new Date(e.date);
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  const settings = JSON.parse(localStorage.getItem("fluxo_settings") || "{}");
+  const range = getPeriodRange(settings);
+  const currencySymbol = getCurrencySymbol(settings.currency || "USD");
+  
+  const periodExpenses = expenses.filter((e) => {
+    try {
+      return isWithinInterval(new Date(e.date), range);
+    } catch (err) {
+      return false;
+    }
   });
+
   const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
-  const thisMonth = thisMonthExpenses.reduce((s, e) => s + e.amount, 0);
+  const periodTotal = periodExpenses.reduce((s, e) => s + e.amount, 0);
 
   if (loading) {
     return (
@@ -89,7 +111,14 @@ const Dashboard = () => {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <button onClick={() => signOut()} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors">
+          <Link to="/profile" className="w-9 h-9 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-glass-border hover:border-primary/50 transition-colors">
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-[10px] font-bold text-primary">{initials}</span>
+            )}
+          </Link>
+          <button onClick={() => signOut()} className="hidden md:flex w-9 h-9 rounded-full bg-muted items-center justify-center text-muted-foreground hover:text-destructive transition-colors">
             <SignOut size={18} weight="bold" />
           </button>
         </div>
@@ -98,8 +127,12 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Metrics Area */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          <BalanceCard totalSpent={totalSpent} thisMonth={thisMonth} />
-          <SpendingChart expenses={thisMonthExpenses} customCategories={customCategories} />
+          <BalanceCard totalSpent={totalSpent} thisMonth={periodTotal} currencySymbol={currencySymbol} />
+          <SpendingChart 
+            expenses={periodExpenses} 
+            customCategories={customCategories} 
+            dateRange={settings.periodType === 'all' ? 'All Time' : `${format(range.start, 'MMM d')} - ${format(range.end, 'MMM d')}`}
+          />
         </div>
 
         {/* Side Rail Area */}
@@ -123,16 +156,6 @@ const Dashboard = () => {
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Premium Features Widget Concept (Based on Dashboard UI Reference) */}
-          <div className="bg-gradient-to-br from-mint/20 via-lavender/10 to-transparent border border-mint/20 rounded-2xl p-6 shadow-xl shadow-mint/5 overflow-hidden relative hidden md:block">
-            <div className="absolute -right-6 -top-6 w-32 h-32 bg-mint/20 rounded-full blur-3xl"></div>
-            <h3 className="font-display font-bold text-foreground mb-2 text-sm relative z-10">Unlock Premium</h3>
-            <p className="text-muted-foreground text-xs mb-4 relative z-10 font-medium">Get access to exclusive benefits and expand your financial tools.</p>
-            <button className="bg-background/80 hover:bg-background text-foreground text-xs font-semibold px-4 py-2 rounded-xl border border-glass-border transition-colors relative z-10">
-              Upgrade now
-            </button>
           </div>
         </div>
       </div>

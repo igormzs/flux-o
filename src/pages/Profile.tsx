@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Camera, User, SignOut, Trash, Check } from "@phosphor-icons/react";
+import { ArrowLeft, Camera, User, SignOut, Trash, Check, CalendarBlank } from "@phosphor-icons/react";
+import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,17 +11,18 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { CURRENCIES } from "@/lib/currencies";
 
-interface SettingsData {
-  budgetGoal: number;
-  currency: string;
-  notifications: { overBudget: boolean; weeklyReport: boolean; dailyReminder: boolean };
-}
-
+import { SettingsData, PeriodType } from "@/lib/date-utils";
 const SETTINGS_KEY = "fluxo_settings";
 function loadSettings(): SettingsData {
   const raw = localStorage.getItem(SETTINGS_KEY);
   if (raw) return JSON.parse(raw);
-  return { budgetGoal: 2000, currency: "USD", notifications: { overBudget: true, weeklyReport: false, dailyReminder: false } };
+  return { 
+    budgetGoal: 2000, 
+    currency: "USD", 
+    notifications: { overBudget: true, weeklyReport: false, dailyReminder: false },
+    periodType: 'month',
+    billingCycleStartDay: 25
+  };
 }
 function saveSettingsLocal(data: SettingsData) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(data));
@@ -205,13 +207,13 @@ const Profile = () => {
           {/* Monthly Budget */}
           <div>
             <label className="text-xs text-muted-foreground block mb-2">Monthly Budget Goal</label>
-            <div className="flex items-center gap-3 bg-muted rounded-xl px-4 h-11">
+            <div className="flex items-center gap-3 bg-muted rounded-xl px-4 h-11 border border-transparent focus-within:border-primary/20 focus-within:bg-muted/80 transition-all">
               <span className="text-muted-foreground text-lg font-medium">{CURRENCIES.find((c) => c.code === pendingSettings.currency)?.symbol || "$"}</span>
               <Input 
                 type="number" 
                 value={pendingSettings.budgetGoal} 
                 onChange={(e) => updatePendingSetting({ budgetGoal: Number(e.target.value) })} 
-                className="bg-transparent border-none text-foreground font-display font-bold text-lg h-full p-0 focus-visible:ring-0" 
+                className="bg-transparent border-none text-foreground font-display font-bold text-lg h-full p-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 outline-none" 
               />
             </div>
           </div>
@@ -230,6 +232,89 @@ const Profile = () => {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Display Period */}
+          <div>
+            <label className="text-xs text-muted-foreground block mb-2">Display Period</label>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              {(['week', 'month', 'billing_cycle', 'custom', 'all'] as PeriodType[]).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => updatePendingSetting({ periodType: type })}
+                  className={`rounded-xl px-3 py-2.5 text-[10px] uppercase font-bold tracking-tight transition-all ${pendingSettings.periodType === type ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                >
+                  {type.replace('_', ' ')}
+                </button>
+              ))}
+            </div>
+
+            <AnimatePresence>
+              {pendingSettings.periodType === 'billing_cycle' && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="p-3 rounded-xl bg-muted/40 border border-glass-border mb-3 overflow-hidden"
+                >
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase mb-1.5 block">Billing Cycle Start Day</label>
+                  <Input 
+                    type="number" 
+                    min={1} 
+                    max={31} 
+                    value={pendingSettings.billingCycleStartDay || 25} 
+                    onChange={(e) => updatePendingSetting({ billingCycleStartDay: Number(e.target.value) })} 
+                    className="bg-muted border-none text-foreground font-bold h-9 text-sm" 
+                  />
+                </motion.div>
+              )}
+
+              {pendingSettings.periodType === 'custom' && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="p-3 rounded-xl bg-muted/40 border border-glass-border mb-3 overflow-hidden"
+                >
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase mb-1.5 block">Start Date</label>
+                      <div className="relative h-10">
+                        <div className="absolute inset-0 flex items-center gap-2 bg-muted rounded-lg px-3 pointer-events-none border border-transparent transition-all">
+                          <CalendarBlank size={14} className="text-muted-foreground" />
+                          <span className="text-foreground text-xs font-medium">
+                            {pendingSettings.customStartDate ? format(new Date(pendingSettings.customStartDate + "T00:00:00"), "dd/MM/yy") : "--/--/--"}
+                          </span>
+                        </div>
+                        <input
+                          type="date"
+                          value={pendingSettings.customStartDate || ""}
+                          onChange={(e) => updatePendingSetting({ customStartDate: e.target.value })}
+                          className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase mb-1.5 block">End Date</label>
+                      <div className="relative h-10">
+                        <div className="absolute inset-0 flex items-center gap-2 bg-muted rounded-lg px-3 pointer-events-none border border-transparent transition-all">
+                          <CalendarBlank size={14} className="text-muted-foreground" />
+                          <span className="text-foreground text-xs font-medium">
+                            {pendingSettings.customEndDate ? format(new Date(pendingSettings.customEndDate + "T00:00:00"), "dd/MM/yy") : "--/--/--"}
+                          </span>
+                        </div>
+                        <input
+                          type="date"
+                          value={pendingSettings.customEndDate || ""}
+                          onChange={(e) => updatePendingSetting({ customEndDate: e.target.value })}
+                          className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <motion.button

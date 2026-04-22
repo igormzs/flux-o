@@ -4,9 +4,10 @@ import { TrendingDown } from "lucide-react";
 interface BalanceCardProps {
   totalSpent: number;
   thisMonth: number;
+  currencySymbol: string;
 }
 
-const BalanceCard = ({ totalSpent, thisMonth }: BalanceCardProps) => {
+const BalanceCard = ({ totalSpent, thisMonth, currencySymbol }: BalanceCardProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -21,7 +22,7 @@ const BalanceCard = ({ totalSpent, thisMonth }: BalanceCardProps) => {
         <div>
           <p className="text-muted-foreground text-sm font-medium mb-1">Total Spent</p>
           <h1 className="text-4xl md:text-5xl font-display font-bold text-gradient-mint tracking-tight">
-            ${totalSpent.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            {currencySymbol}{totalSpent.toLocaleString("en-US", { minimumFractionDigits: 2 })}
           </h1>
         </div>
         <div className="md:text-right border-t border-glass-border md:border-none pt-4 md:pt-0">
@@ -30,7 +31,7 @@ const BalanceCard = ({ totalSpent, thisMonth }: BalanceCardProps) => {
             <span className="font-medium">This month</span>
           </div>
           <span className="text-foreground font-semibold text-lg md:text-xl">
-            ${thisMonth.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            {currencySymbol}{thisMonth.toLocaleString("en-US", { minimumFractionDigits: 2 })}
           </span>
         </div>
       </div>

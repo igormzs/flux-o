@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 const tabs = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/insights", icon: BarChart3, label: "Insights" },
-  { path: "/profile", icon: UserCircle, label: "Settings" },
+  { path: "/profile", icon: UserCircle, label: "Profile" },
 ];
 
 const Sidebar = () => {

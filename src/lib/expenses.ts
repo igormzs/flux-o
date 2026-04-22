@@ -25,12 +25,12 @@ export interface CustomCategory {
 
 export const DEFAULT_CATEGORIES = [
   { id: "food", label: "Food", icon: "Pizza", color: "mint" },
-  { id: "grocery", label: "Grocery", icon: "ShoppingCart", color: "teal" },
+  { id: "grocery", label: "Grocery", icon: "ShoppingCart", color: "peach" },
   { id: "rent", label: "Rent", icon: "House", color: "lavender" },
   { id: "subscriptions", label: "Subs", icon: "Television", color: "electric" },
   { id: "nightlife", label: "Drinks", icon: "BeerBottle", color: "pink" },
   { id: "utilities", label: "Utilities", icon: "Plug", color: "yellow" },
-  { id: "selfcare", label: "Self-care", icon: "Gift", color: "peach" },
+  { id: "selfcare", label: "Self-care", icon: "Gift", color: "teal" },
   { id: "travel", label: "Travel", icon: "AirplaneTilt", color: "coral" },
 ] as const;
 
