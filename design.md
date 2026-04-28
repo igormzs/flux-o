@@ -11,8 +11,9 @@ The name **Flux-o** represents the "flow" (flux) of money and organization (o). 
 
 ## 2. Color Palette
 
-### Base Colors (Dark Mode)
-| Role | Color (HSL) | CSS Variable | Use Case |
+### Base Colors (Dark & Light Mode)
+The application fully supports both Light and Dark themes, managed via the `.light` class on the `html` element. The variables dynamically shift to provide optimal contrast.
+| Role | Color (HSL Dark) | CSS Variable | Use Case |
 |------|-------------|--------------|----------|
 | **Background** | `240 10% 6%` | `--background` | Page background |
 | **Card** | `240 8% 10%` | `--card` | Component containers |
@@ -25,10 +26,15 @@ The name **Flux-o** represents the "flow" (flux) of money and organization (o). 
 - **Success/Mint**: `--mint` (160 60% 60%) - Positive flow, groceries.
 - **Warning/Yellow**: `--yellow` (45 90% 65%) - Attention, utilities.
 - **Destructive/Coral**: `--coral` (10 75% 65%) - Negative flow, transport.
+- **Information/Electric**: `--electric` (210 90% 65%) - Secondary indicators, general info.
+- **Warm/Peach**: `--peach` (25 80% 70%) - Custom highlights.
+- **Accent/Teal**: `--teal` (180 50% 55%) - Gradient end points.
 
 ### Gradients
-- **Mint Flow**: `bg-gradient-to-r from-mint to-teal`
-- **Pastel Glow**: `bg-gradient-to-r from-mint via-lavender to-pink`
+- **Mint Flow Background**: `bg-gradient-to-r from-mint to-teal`
+- **Pastel Glow Background**: `bg-gradient-to-r from-mint via-lavender to-pink`
+- **Mint Text Gradient**: Use the utility class `.text-gradient-mint`
+- **Pastel Text Gradient**: Use the utility class `.text-gradient-pastel`
 
 ---
 
@@ -54,6 +60,17 @@ Used for all body text, labels, and descriptive content for maximum readability 
 All main containers use the `.glass-card` utility.
 - **Properties**: `bg-card/60`, `backdrop-blur-xl`, `border-glass-border`, `rounded-2xl`.
 - **Logic**: Provides depth and transparency, allowing background elements to softly bleed through.
+
+### Category Pills
+Use the `.category-pill` utility class for any standardized tag or categorization label.
+- **Properties**: `px-4 py-2 rounded-full text-sm font-medium transition-all duration-200`.
+
+### Animations
+Custom keyframe animations are configured in `tailwind.config.ts`:
+- **Fade In**: `animate-fade-in` (0.4s ease-out)
+- **Scale In**: `animate-scale-in` (0.3s ease-out)
+- **Bounce In**: `animate-bounce-in` (0.5s cubic-bezier)
+- **Accordion Dropdown**: `animate-accordion-down` and `animate-accordion-up`
 
 ### Border Radii
 - **Cards**: `1rem` (16px) - `--radius`

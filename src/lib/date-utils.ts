@@ -9,8 +9,13 @@ import {
   setDate as setDayOfMonth,
   isAfter,
   isBefore,
-  format
+  format,
+  setHours,
+  setMinutes,
+  setSeconds,
+  setMilliseconds,
 } from "date-fns";
+import { SALARY_CYCLE_START_DAY } from "./constants";
 
 export type PeriodType = 'all' | 'week' | 'month' | 'billing_cycle' | 'custom';
 
@@ -66,4 +71,10 @@ export function getPeriodRange(settings: SettingsData): { start: Date, end: Date
     default:
       return { start: startOfMonth(now), end: endOfMonth(now) };
   }
+}
+
+export function getSalaryCycleRange(date: Date): { start: Date; end: Date } {
+  const end = setHours(setMinutes(setSeconds(setMilliseconds(setDayOfMonth(new Date(date), SALARY_CYCLE_START_DAY), 999), 59), 59), 23);
+  const start = setHours(setMinutes(setSeconds(setMilliseconds(setDayOfMonth(subMonths(new Date(date), 1), SALARY_CYCLE_START_DAY), 0), 0), 0), 0);
+  return { start, end };
 }
