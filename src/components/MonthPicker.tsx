@@ -1,6 +1,6 @@
-import { format, subMonths, startOfMonth } from "date-fns";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useRef, useEffect } from "react";
 
 interface MonthPickerProps {
   selectedMonth: Date;
@@ -17,11 +17,31 @@ const MonthPicker = ({ selectedMonth, onMonthSelect, customRange }: MonthPickerP
     return new Date(currentYear, i, 1);
   });
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    const activeKey = customRange?.from ? 'custom' : format(selectedMonth, 'MMM yyyy');
+    const activeElement = itemRefs.current[activeKey];
+    
+    if (activeElement && scrollRef.current) {
+      activeElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'nearest', 
+        inline: 'center' 
+      });
+    }
+  }, [selectedMonth, customRange]);
+
   return (
-    <div className="flex gap-3 overflow-x-auto pb-8 pt-2 scrollbar-none snap-x px-8 -mx-8">
+    <div 
+      ref={scrollRef}
+      className="flex gap-3 overflow-x-auto pb-8 pt-2 scrollbar-none snap-x px-8 -mx-8"
+    >
       {/* Custom Range Chip (only visible if active) */}
       {customRange?.from && (
         <motion.button
+          ref={(el) => (itemRefs.current['custom'] = el)}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1.1 }}
           className={cn(
@@ -34,13 +54,13 @@ const MonthPicker = ({ selectedMonth, onMonthSelect, customRange }: MonthPickerP
       )}
 
       {months.map((month) => {
-        const isSelected = !customRange && format(month, 'MMM yyyy') === format(selectedMonth, 'MMM yyyy');
-        // Hide future months if they aren't the selected one? 
-        // User said "at least all months of the year", so showing all is fine.
+        const key = format(month, 'MMM yyyy');
+        const isSelected = !customRange && key === format(selectedMonth, 'MMM yyyy');
         
         return (
           <motion.button
             key={month.toISOString()}
+            ref={(el) => (itemRefs.current[key] = el)}
             onClick={() => onMonthSelect(month)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

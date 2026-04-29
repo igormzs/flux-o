@@ -121,3 +121,9 @@ export function getPreviousCycleWeekRange(currentWeekStart: Date): { start: Date
   
   return { start, end };
 }
+
+export function getEquivalentPeriodLastMonth(start: Date, end: Date): { start: Date; end: Date } {
+  const prevStart = subMonths(new Date(start), 1);
+  const prevEnd = subMonths(new Date(end), 1);
+  return { start: prevStart, end: prevEnd };
+}

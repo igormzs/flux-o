@@ -6,7 +6,7 @@ import { subMonths, format, startOfMonth, differenceInDays } from "date-fns";
 import CategoryIcon from "@/components/CategoryIcon";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Link } from "react-router-dom";
-import { ArrowLeft, CalendarBlank, TrendUp } from "@phosphor-icons/react";
+import { ArrowLeft, CalendarBlank, TrendUp, TrendDown, ChartLineUp } from "@phosphor-icons/react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getCurrencySymbol } from "@/lib/currencies";
@@ -14,7 +14,7 @@ import InsightDetailsSheet from "@/components/InsightDetailsSheet";
 import MonthPicker from "@/components/MonthPicker";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { useExpenses, useCustomCategories } from "@/hooks/useExpenses";
-import { getSalaryCycleRange } from "@/lib/date-utils";
+import { getSalaryCycleRange, getEquivalentPeriodLastMonth } from "@/lib/date-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
@@ -45,9 +45,8 @@ const Insights = () => {
   }, [selectedMonth, customRange]);
 
   const prevRange = useMemo(() => {
-    if (customRange) return null;
-    return getSalaryCycleRange(subMonths(selectedMonth, 1));
-  }, [selectedMonth, customRange]);
+    return getEquivalentPeriodLastMonth(range.start, range.end);
+  }, [range]);
 
   const { data: expenses = [], isLoading: isLoadingExpenses } = useExpenses(range.start, range.end);
   const { data: prevExpenses = [] } = useExpenses(prevRange?.start || range.start, prevRange?.end || range.end);
@@ -182,26 +181,50 @@ const Insights = () => {
           <motion.div 
             initial={{ opacity: 0, y: 10 }} 
             animate={{ opacity: 1, y: 0 }} 
-            className="glass-card p-6"
+            className="glass-card p-6 md:p-8"
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Spending</span>
-              {monthVariation !== null && (
-                <div className={cn(
-                  "flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold",
-                  monthVariation <= 0 ? "bg-mint/10 text-mint" : "bg-coral/10 text-coral"
-                )}>
-                  {monthVariation <= 0 ? "↓" : "↑"} {Math.abs(monthVariation)}% vs last cycle
+            <div className="flex flex-col gap-6">
+              <div>
+                <span className="text-muted-foreground text-xs font-bold uppercase tracking-[0.1em] mb-2 font-body block">Total Spending</span>
+                {isLoadingExpenses ? (
+                  <Skeleton className="h-12 w-48 bg-muted/50" />
+                ) : (
+                  <h1 className="font-display font-bold text-5xl md:text-6xl text-foreground tracking-tight">
+                    {currencySymbol}{totalThisMonth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </h1>
+                )}
+              </div>
+
+              <div className="pt-6 border-t border-glass-border/50">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <ChartLineUp size={20} weight="bold" className="text-primary" />
+                    <span className="text-xs font-bold uppercase tracking-wider font-body">Pulse Indicator</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    {monthVariation !== null && (
+                      <div className={cn(
+                        "flex items-center gap-1.5 px-3 py-2 rounded-xl font-display font-bold text-sm transition-colors",
+                        monthVariation <= 0 ? "bg-mint/10 text-mint" : "bg-coral/10 text-coral"
+                      )}>
+                        {monthVariation <= 0 ? <TrendDown size={16} weight="bold" /> : <TrendUp size={16} weight="bold" />}
+                        {Math.abs(monthVariation)}%
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-col justify-center">
+                      <span className="text-foreground font-bold font-display text-lg leading-tight">
+                        {totalThisMonth >= totalPrevMonth ? "+" : "-"}{currencySymbol}{Math.abs(totalThisMonth - totalPrevMonth).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </span>
+                      <span className="text-muted-foreground text-[10px] font-medium font-body uppercase tracking-tight">
+                        vs. previous period
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
-            {isLoadingExpenses ? (
-              <Skeleton className="h-10 w-32 bg-muted/50" />
-            ) : (
-              <p className="font-display font-bold text-4xl text-foreground">
-                {currencySymbol}{totalThisMonth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-            )}
           </motion.div>
 
           {/* Weekly Comparison */}

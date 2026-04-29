@@ -39,7 +39,7 @@ const BalanceCard = ({ cycleTotal, currentWeekTotal, prevWeekTotal, currencySymb
         <div className="pt-6 border-t border-glass-border/50">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <ChartLineUp size={20} weight="duotone" className="text-primary" />
+              <ChartLineUp size={20} weight="bold" className="text-primary" />
               <span className="text-xs font-bold uppercase tracking-wider font-body">Weekly Pulse</span>
             </div>
             
