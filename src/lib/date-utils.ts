@@ -14,6 +14,8 @@ import {
   setMinutes,
   setSeconds,
   setMilliseconds,
+  addDays,
+  differenceInDays,
 } from "date-fns";
 import { SALARY_CYCLE_START_DAY } from "./constants";
 
@@ -76,5 +78,46 @@ export function getPeriodRange(settings: SettingsData): { start: Date, end: Date
 export function getSalaryCycleRange(date: Date): { start: Date; end: Date } {
   const end = setHours(setMinutes(setSeconds(setMilliseconds(setDayOfMonth(new Date(date), SALARY_CYCLE_START_DAY), 999), 59), 59), 23);
   const start = setHours(setMinutes(setSeconds(setMilliseconds(setDayOfMonth(subMonths(new Date(date), 1), SALARY_CYCLE_START_DAY), 0), 0), 0), 0);
+  return { start, end };
+}
+
+export function getActiveSalaryCycleRange(date: Date): { start: Date; end: Date } {
+  const day = date.getDate();
+  let start: Date;
+  
+  if (day >= SALARY_CYCLE_START_DAY) {
+    start = setDayOfMonth(new Date(date), SALARY_CYCLE_START_DAY);
+  } else {
+    start = setDayOfMonth(subMonths(new Date(date), 1), SALARY_CYCLE_START_DAY);
+  }
+  
+  start.setHours(0, 0, 0, 0);
+  // End is the day before the next cycle start
+  const end = setDayOfMonth(addMonths(start, 1), SALARY_CYCLE_START_DAY - 1);
+  end.setHours(23, 59, 59, 999);
+  
+  return { start, end };
+}
+
+export function getCycleWeekRange(date: Date, cycleStart: Date): { start: Date; end: Date } {
+  const diff = differenceInDays(date, cycleStart);
+  const weekNum = Math.floor(Math.max(0, diff) / 7);
+  
+  const start = addDays(new Date(cycleStart), weekNum * 7);
+  start.setHours(0, 0, 0, 0);
+  
+  const end = addDays(new Date(start), 6);
+  end.setHours(23, 59, 59, 999);
+  
+  return { start, end };
+}
+
+export function getPreviousCycleWeekRange(currentWeekStart: Date): { start: Date; end: Date } {
+  const start = subMonths(new Date(currentWeekStart), 1);
+  start.setHours(0, 0, 0, 0);
+  
+  const end = addDays(new Date(start), 6);
+  end.setHours(23, 59, 59, 999);
+  
   return { start, end };
 }

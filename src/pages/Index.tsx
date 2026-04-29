@@ -11,8 +11,9 @@ import ExpenseDetailSheet from "@/components/ExpenseDetailSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { getPeriodRange } from "@/lib/date-utils";
+import { getPeriodRange, getActiveSalaryCycleRange, getCycleWeekRange, getPreviousCycleWeekRange } from "@/lib/date-utils";
 import { isWithinInterval, format } from "date-fns";
+import { useExpenses } from "@/hooks/useExpenses";
 import { Link } from "react-router-dom";
 import { User } from "@phosphor-icons/react";
 import { getCurrencySymbol } from "@/lib/currencies";
@@ -79,6 +80,19 @@ const Dashboard = () => {
   const range = getPeriodRange(settings);
   const currencySymbol = getCurrencySymbol(settings.currency || "USD");
   
+  const now = new Date();
+  const activeCycle = getActiveSalaryCycleRange(now);
+  const currentWeek = getCycleWeekRange(now, activeCycle.start);
+  const prevWeek = getPreviousCycleWeekRange(currentWeek.start);
+
+  const { data: cycleExpenses = [] } = useExpenses(activeCycle.start, activeCycle.end);
+  const { data: currentWeekExpenses = [] } = useExpenses(currentWeek.start, currentWeek.end);
+  const { data: prevWeekExpenses = [] } = useExpenses(prevWeek.start, prevWeek.end);
+
+  const cycleTotal = cycleExpenses.reduce((s, e) => s + Number(e.amount), 0);
+  const currentWeekTotal = currentWeekExpenses.reduce((s, e) => s + Number(e.amount), 0);
+  const prevWeekTotal = prevWeekExpenses.reduce((s, e) => s + Number(e.amount), 0);
+
   const periodExpenses = expenses.filter((e) => {
     try {
       return isWithinInterval(new Date(e.date), range);
@@ -87,7 +101,6 @@ const Dashboard = () => {
     }
   });
 
-  const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
   const periodTotal = periodExpenses.reduce((s, e) => s + e.amount, 0);
 
   if (loading) {
@@ -127,7 +140,12 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Metrics Area */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          <BalanceCard totalSpent={totalSpent} thisMonth={periodTotal} currencySymbol={currencySymbol} />
+          <BalanceCard 
+            cycleTotal={cycleTotal} 
+            currentWeekTotal={currentWeekTotal} 
+            prevWeekTotal={prevWeekTotal} 
+            currencySymbol={currencySymbol} 
+          />
           <SpendingChart 
             expenses={periodExpenses} 
             customCategories={customCategories} 
