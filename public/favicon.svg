@@ -5,7 +5,7 @@
       <stop offset="100%" stop-color="hsl(260, 50%, 70%)" />
     </linearGradient>
   </defs>
-  <rect width="256" height="256" rx="80" fill="url(#bg-grad)" />
+  <rect width="256" height="256" fill="url(#bg-grad)" />
   <g transform="translate(48, 48) scale(0.625)">
     <!-- Phosphor Wallet Duotone -->
     <path d="M216,72H56a16,16,0,0,0-16,16V184a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A16,16,0,0,0,216,72Z" opacity="0.1" fill="hsl(240, 10%, 6%)" />
