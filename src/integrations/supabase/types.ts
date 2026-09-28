@@ -46,6 +46,7 @@ export type Database = {
           amount: number
           category: string
           created_at: string
+          currency: string | null
           custom_category_id: string | null
           date: string
           id: string
@@ -59,6 +60,7 @@ export type Database = {
           amount: number
           category: string
           created_at?: string
+          currency?: string | null
           custom_category_id?: string | null
           date?: string
           id?: string
@@ -72,6 +74,7 @@ export type Database = {
           amount?: number
           category?: string
           created_at?: string
+          currency?: string | null
           custom_category_id?: string | null
           date?: string
           id?: string
@@ -94,30 +97,51 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          billing_cycle_day: number
+          budget_goal: number
           created_at: string
+          currency: string
+          default_scope: string
           first_name: string | null
           id: string
           last_name: string | null
+          notifications: Json
+          settings_migrated_at: string | null
           updated_at: string
           username: string | null
+          week_starts_on: number
         }
         Insert: {
           avatar_url?: string | null
+          billing_cycle_day?: number
+          budget_goal?: number
           created_at?: string
+          currency?: string
+          default_scope?: string
           first_name?: string | null
           id: string
           last_name?: string | null
+          notifications?: Json
+          settings_migrated_at?: string | null
           updated_at?: string
           username?: string | null
+          week_starts_on?: number
         }
         Update: {
           avatar_url?: string | null
+          billing_cycle_day?: number
+          budget_goal?: number
           created_at?: string
+          currency?: string
+          default_scope?: string
           first_name?: string | null
           id?: string
           last_name?: string | null
+          notifications?: Json
+          settings_migrated_at?: string | null
           updated_at?: string
           username?: string | null
+          week_starts_on?: number
         }
         Relationships: []
       }
