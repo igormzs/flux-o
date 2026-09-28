@@ -10,12 +10,13 @@
  * version (`<screen>.<viewport>.<theme>.png`), so v1 and v2 images pair up.
  *
  * Flags: --app-dir <path>  --out <dir>  --only <screen,screen>  --port <n>
+ *        --schema v1|v2   (default v2: demo data as it looks after the v2 migrations)
  */
 import { spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { chromium, type Page } from "playwright";
-import { buildDemoData, DEMO_LOCAL_SETTINGS, DEMO_NOW } from "./demo-data.ts";
+import { applyV2Migrations, buildDemoData, DEMO_LOCAL_SETTINGS, DEMO_NOW } from "./demo-data.ts";
 import {
   demoSession,
   installMockSupabase,
@@ -32,6 +33,8 @@ const appDir = path.resolve(args.get("app-dir") ?? ".");
 const outDir = path.resolve(args.get("out") ?? "docs/case-study/screenshots/current");
 const port = Number(args.get("port") ?? 5199);
 const only = args.get("only")?.split(",");
+const schema = args.get("schema") ?? "v2";
+const demoData = () => (schema === "v1" ? buildDemoData() : applyV2Migrations(buildDemoData()));
 const baseURL = `http://localhost:${port}`;
 
 const VIEWPORTS = {
@@ -186,7 +189,7 @@ async function main() {
             locale: "en-US",
             colorScheme: theme,
           });
-          await installMockSupabase(context, buildDemoData(), rpcHandlers);
+          await installMockSupabase(context, demoData(), rpcHandlers);
           await context.addInitScript(
             ([key, session, settings, themeName]) => {
               localStorage.setItem(key as string, JSON.stringify(session));

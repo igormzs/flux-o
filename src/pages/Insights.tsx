@@ -1,98 +1,88 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from "recharts";
-import { DEFAULT_CATEGORIES, getCategoryInfo } from "@/lib/expenses";
-import { subMonths, format, startOfMonth, differenceInDays } from "date-fns";
+import { resolveCategory, gradientStops } from "@/lib/categories";
+import { format, startOfMonth, differenceInCalendarDays } from "date-fns";
 import CategoryIcon from "@/components/CategoryIcon";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Link } from "react-router-dom";
 import { ArrowLeft, CalendarBlank, TrendUp, TrendDown, ChartLineUp } from "@phosphor-icons/react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { getCurrencySymbol } from "@/lib/currencies";
+import { getCurrencySymbol, formatMoney, splitByCurrency, sumAmounts } from "@/lib/currencies";
 import InsightDetailsSheet from "@/components/InsightDetailsSheet";
+import OtherCurrenciesNote from "@/components/OtherCurrenciesNote";
 import MonthPicker from "@/components/MonthPicker";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { useExpenses, useCustomCategories } from "@/hooks/useExpenses";
-import { getSalaryCycleRange, getEquivalentPeriodLastMonth } from "@/lib/date-utils";
+import { initialsOf, useProfile, useSettings } from "@/hooks/useProfile";
+import { countWeeks, getCycleRange, getPreviousRange, rangeFromDays } from "@/lib/date-utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DateRange } from "react-day-picker";
+import { DateRange as DayPickerRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 
-const GRADIENT_COLORS: Record<string, { from: string; to: string }> = {
-  mint: { from: "#4dd8a5", to: "#2ec4a0" },
-  teal: { from: "#4db8b0", to: "#3aa89e" },
-  lavender: { from: "#a78bfa", to: "#8b6fdb" },
-  electric: { from: "#5ba3f5", to: "#4a8ae8" },
-  pink: { from: "#f472b6", to: "#e05599" },
-  yellow: { from: "#fbbf24", to: "#f5a623" },
-  peach: { from: "#f4a574", to: "#e88d5a" },
-  coral: { from: "#ef7564", to: "#e05e4d" },
+const gradientCss = (color: string) => {
+  const { from, to } = gradientStops(color);
+  return `linear-gradient(90deg, ${from}, ${to})`;
 };
 
 const Insights = () => {
   const { user } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState<Date>(startOfMonth(new Date()));
-  const [customRange, setCustomRange] = useState<DateRange | undefined>();
-  const [profile, setProfile] = useState<{ first_name?: string; last_name?: string; username?: string; avatar_url?: string | null }>({});
+  const [customRange, setCustomRange] = useState<DayPickerRange | undefined>();
   const [selectedDetail, setSelectedDetail] = useState<"day" | "week" | null>(null);
+  const { data: profile } = useProfile();
+  const { settings } = useSettings();
+  const mainCurrency = settings.currency;
+  const currencySymbol = getCurrencySymbol(mainCurrency);
 
+  const isCustom = !!(customRange?.from && customRange?.to);
+  // A month chip means the cycle that contains the 1st of that month
+  // (for a cycle day of 25, "September" is Aug 25 – Sep 24).
   const range = useMemo(() => {
-    if (customRange?.from && customRange?.to) {
-      return { start: customRange.from, end: customRange.to };
-    }
-    return getSalaryCycleRange(selectedMonth);
-  }, [selectedMonth, customRange]);
+    if (customRange?.from && customRange?.to) return rangeFromDays(customRange.from, customRange.to);
+    return getCycleRange(selectedMonth, settings.cycleDay);
+  }, [selectedMonth, customRange, settings.cycleDay]);
 
-  const prevRange = useMemo(() => {
-    return getEquivalentPeriodLastMonth(range.start, range.end);
-  }, [range]);
+  const prevRange = useMemo(
+    () => getPreviousRange(range, isCustom ? "custom" : "cycle", { cycleDay: settings.cycleDay }),
+    [range, isCustom, settings.cycleDay],
+  );
 
-  const { data: expenses = [], isLoading: isLoadingExpenses } = useExpenses(range.start, range.end);
-  const { data: prevExpenses = [] } = useExpenses(prevRange?.start || range.start, prevRange?.end || range.end);
+  const { data: allExpenses = [], isLoading: isLoadingExpenses } = useExpenses(range);
+  const { data: allPrevExpenses = [] } = useExpenses(prevRange);
   const { data: customCategories = [] } = useCustomCategories();
 
-  useEffect(() => {
-    if (user) {
-      supabase.from("profiles").select("first_name, last_name, username, avatar_url").eq("id", user.id).single().then(({ data }) => {
-        if (data) setProfile(data);
-      });
-    }
-  }, [user]);
+  const initials = initialsOf(profile, user?.email);
 
-  const initials = profile.first_name && profile.last_name 
-    ? `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase()
-    : profile.first_name 
-      ? profile.first_name.substring(0, 2).toUpperCase()
-      : "IM";
+  // Totals and charts only add up the main currency; others are listed apart.
+  const { main: expenses, others: otherCurrencies } = useMemo(() => splitByCurrency(allExpenses, mainCurrency), [allExpenses, mainCurrency]);
+  const prevExpenses = useMemo(() => splitByCurrency(allPrevExpenses, mainCurrency).main, [allPrevExpenses, mainCurrency]);
 
-  const settings = JSON.parse(localStorage.getItem("fluxo_settings") || "{}");
-  const currencySymbol = getCurrencySymbol(settings.currency || "USD");
+  const totalThisMonth = sumAmounts(expenses);
+  const totalPrevMonth = sumAmounts(prevExpenses);
 
-  const totalThisMonth = expenses.reduce((s, e) => s + Number(e.amount), 0);
-  const totalPrevMonth = prevExpenses.reduce((s, e) => s + Number(e.amount), 0);
-  
   const monthVariation = useMemo(() => {
     if (totalPrevMonth === 0) return null;
     return Math.round(((totalThisMonth - totalPrevMonth) / totalPrevMonth) * 100);
   }, [totalThisMonth, totalPrevMonth]);
 
+  // Biggest category increase vs the previous period, including custom categories
+  // (v1 only looked at the 8 built-in ones).
   const insight = useMemo(() => {
     if (expenses.length === 0 || prevExpenses.length === 0) return null;
-    const allCats = [...DEFAULT_CATEGORIES];
-    let biggestDiff = -Infinity;
-    let biggestCat = allCats[0];
-    for (const cat of allCats) {
-      const thisTotal = expenses.filter((e) => e.category === cat.id).reduce((s, e) => s + Number(e.amount), 0);
-      const lastTotal = prevExpenses.filter((e) => e.category === cat.id).reduce((s, e) => s + Number(e.amount), 0);
+    const catIds = new Set([...expenses, ...prevExpenses].map((e) => e.category));
+    let biggest: { id: string; pct: number } | null = null;
+    for (const id of catIds) {
+      const thisTotal = sumAmounts(expenses.filter((e) => e.category === id));
+      const lastTotal = sumAmounts(prevExpenses.filter((e) => e.category === id));
       if (lastTotal > 0) {
         const pct = ((thisTotal - lastTotal) / lastTotal) * 100;
-        if (pct > biggestDiff) { biggestDiff = pct; biggestCat = cat; }
+        if (!biggest || pct > biggest.pct) biggest = { id, pct };
       }
     }
-    if (biggestDiff <= 0) return null;
-    return { cat: biggestCat, pct: Math.round(biggestDiff) };
-  }, [expenses, prevExpenses]);
+    if (!biggest || biggest.pct <= 0) return null;
+    return { cat: resolveCategory(biggest.id, customCategories), pct: Math.round(biggest.pct) };
+  }, [expenses, prevExpenses, customCategories]);
 
   const busiestDayData = useMemo(() => {
     if (expenses.length === 0) return null;
@@ -109,7 +99,7 @@ const Insights = () => {
     if (expenses.length === 0) return null;
     const weeks: Record<number, number> = {};
     expenses.forEach(e => {
-      const d = differenceInDays(new Date(e.date), range.start);
+      const d = differenceInCalendarDays(new Date(e.date), range.start);
       const w = Math.floor(Math.max(0, d) / 7) + 1;
       weeks[w] = (weeks[w] || 0) + Number(e.amount);
     });
@@ -118,12 +108,10 @@ const Insights = () => {
   }, [expenses, range]);
 
   const weeklyComparisonData = useMemo(() => {
-    if (!range.start || !range.end) return [];
-    const daysInPeriod = differenceInDays(range.end, range.start);
-    const totalWeeks = Math.max(1, Math.ceil(daysInPeriod / 7));
+    const totalWeeks = countWeeks(range);
     const weeksTotal = Array(totalWeeks).fill(0);
     expenses.forEach(e => {
-      const d = differenceInDays(new Date(e.date), range.start);
+      const d = differenceInCalendarDays(new Date(e.date), range.start);
       const w = Math.floor(Math.max(0, d) / 7);
       if (w >= 0 && w < totalWeeks) weeksTotal[w] += Number(e.amount);
     });
@@ -133,12 +121,13 @@ const Insights = () => {
   const categoryBreakdown = useMemo(() => {
     const catIds = new Set(expenses.map((e) => e.category));
     return Array.from(catIds).map((catId) => {
-      const info = getCategoryInfo(catId, customCategories);
-      const total = expenses.filter((e) => e.category === catId).reduce((s, e) => s + Number(e.amount), 0);
+      const info = resolveCategory(catId, customCategories);
+      const total = sumAmounts(expenses.filter((e) => e.category === catId));
       return { ...info, total };
     }).filter((c) => c.total > 0).sort((a, b) => b.total - a.total);
   }, [expenses, customCategories]);
 
+  const mintGradient = gradientStops("mint");
 
   return (
     <div className="min-h-screen bg-background pb-24 px-8 pt-8 max-w-lg mx-auto lg:max-w-6xl text-foreground transition-all duration-500">
@@ -157,7 +146,7 @@ const Insights = () => {
           <ThemeToggle />
           <DateRangePicker date={customRange} onDateChange={setCustomRange} />
           <Link to="/profile" className="w-9 h-9 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-glass-border hover:border-primary/50 transition-colors">
-            {profile.avatar_url ? (
+            {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
             ) : (
               <span className="text-[10px] font-bold text-primary">{initials}</span>
@@ -189,9 +178,12 @@ const Insights = () => {
                 {isLoadingExpenses ? (
                   <Skeleton className="h-12 w-48 bg-muted/50" />
                 ) : (
-                  <h1 className="font-display font-bold text-5xl md:text-6xl text-foreground tracking-tight">
-                    {currencySymbol}{totalThisMonth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </h1>
+                  <>
+                    <h1 className="font-display font-bold text-5xl md:text-6xl text-foreground tracking-tight">
+                      {formatMoney(totalThisMonth, mainCurrency)}
+                    </h1>
+                    <OtherCurrenciesNote totals={otherCurrencies} className="mt-2" />
+                  </>
                 )}
               </div>
 
@@ -215,7 +207,7 @@ const Insights = () => {
                     
                     <div className="flex flex-col justify-center">
                       <span className="text-foreground font-bold font-display text-lg leading-tight">
-                        {totalThisMonth >= totalPrevMonth ? "+" : "-"}{currencySymbol}{Math.abs(totalThisMonth - totalPrevMonth).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {totalThisMonth >= totalPrevMonth ? "+" : "-"}{formatMoney(Math.abs(totalThisMonth - totalPrevMonth), mainCurrency)}
                       </span>
                       <span className="text-muted-foreground text-[10px] font-medium font-body uppercase tracking-tight">
                         vs. previous period
@@ -263,8 +255,8 @@ const Insights = () => {
                     </Bar>
                     <defs>
                       <linearGradient id="mint-gradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={GRADIENT_COLORS.mint.from} />
-                        <stop offset="100%" stopColor={GRADIENT_COLORS.mint.to} />
+                        <stop offset="0%" stopColor={mintGradient.from} />
+                        <stop offset="100%" stopColor={mintGradient.to} />
                       </linearGradient>
                     </defs>
                   </BarChart>
@@ -282,7 +274,7 @@ const Insights = () => {
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="glass-card p-4 border-l-4 border-accent">
               <p className="text-foreground text-sm leading-relaxed">
                 This period you spent <span className="font-bold text-accent">{insight.pct}% more</span> on{" "}
-                <CategoryIcon categoryId={insight.cat.id} size={16} className="inline-block align-text-bottom" /> {insight.cat.label} than last cycle!
+                <CategoryIcon categoryId={insight.cat.id} customIcon={insight.cat.icon} size={16} className="inline-block align-text-bottom" /> {insight.cat.label} than last cycle!
               </p>
             </motion.div>
           )}
@@ -343,7 +335,7 @@ const Insights = () => {
                           <CategoryIcon categoryId={cat.id} customIcon={cat.icon} size={18} />
                           <span className="font-medium">{cat.label}</span>
                         </span>
-                        <span className="font-bold text-foreground">{currencySymbol}{cat.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        <span className="font-bold text-foreground">{formatMoney(cat.total, mainCurrency)}</span>
                       </div>
                       <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden">
                         <motion.div
@@ -351,7 +343,7 @@ const Insights = () => {
                           animate={{ width: `${pct}%` }}
                           transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
                           className="h-full rounded-full"
-                          style={{ background: `linear-gradient(90deg, ${GRADIENT_COLORS[cat.color]?.from ?? "#888"}, ${GRADIENT_COLORS[cat.color]?.to ?? "#666"})` }}
+                          style={{ background: gradientCss(cat.color) }}
                         />
                       </div>
                     </div>

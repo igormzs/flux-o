@@ -1,33 +1,38 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Plus, SignOut, HandWaving } from "@phosphor-icons/react";
 import ThemeToggle from "@/components/ThemeToggle";
-import { getExpenses, deleteExpense, Expense, getCustomCategories, CustomCategory } from "@/lib/expenses";
+import { Expense } from "@/lib/expenses";
 import BalanceCard from "@/components/BalanceCard";
 import TransactionCard from "@/components/TransactionCard";
 import SpendingChart from "@/components/SpendingChart";
 import AddExpenseSheet from "@/components/AddExpenseSheet";
 import ExpenseDetailSheet from "@/components/ExpenseDetailSheet";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { getPeriodRange, getActiveSalaryCycleRange, getCycleWeekRange, getPreviousCycleWeekRange } from "@/lib/date-utils";
-import { isWithinInterval, format } from "date-fns";
-import { useExpenses } from "@/hooks/useExpenses";
+import { getCycleRange, getCycleWeek, getCycleWeekIndex, getPreviousRange, getScopeRange, lastDayOf } from "@/lib/date-utils";
+import { format } from "date-fns";
+import { useCustomCategories, useExpenseMutations, useExpenses, useRecentExpenses } from "@/hooks/useExpenses";
+import { displayNameOf, initialsOf, useProfile, useSettings } from "@/hooks/useProfile";
 import { Link } from "react-router-dom";
-import { User } from "@phosphor-icons/react";
-import { getCurrencySymbol } from "@/lib/currencies";
+import { splitByCurrency, sumAmounts } from "@/lib/currencies";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<{ first_name?: string; last_name?: string; username?: string; avatar_url?: string | null }>({});
-  const [displayName, setDisplayName] = useState(() => localStorage.getItem("fluxo_display_name") || "");
+
+  const { data: profile, isLoading: loadingProfile } = useProfile();
+  const { settings } = useSettings();
+  const { data: customCategories = [] } = useCustomCategories();
+  const { data: recentExpenses = [], isLoading: loadingRecent } = useRecentExpenses(10);
+  const { remove } = useExpenseMutations();
+
+  const displayName = displayNameOf(profile, user?.email);
+  const initials = initialsOf(profile, user?.email);
+  const mainCurrency = settings.currency;
+  const scopeOptions = { cycleDay: settings.cycleDay, weekStartsOn: settings.weekStartsOn };
 
   const handleEditClick = (expense: Expense) => {
     setExpenseToEdit(expense);
@@ -35,75 +40,31 @@ const Dashboard = () => {
     setShowAdd(true); // Open Edit Sheet
   };
 
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("first_name, last_name, username, avatar_url").eq("id", user.id).single().then(({ data }) => {
-      if (data) {
-        setProfile(data);
-        const name = data.first_name || data.username || user.email?.split("@")[0] || "there";
-        setDisplayName(name);
-        localStorage.setItem("fluxo_display_name", name);
-      }
-    });
-  }, [user]);
-
-  const initials = profile.first_name && profile.last_name 
-    ? `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase()
-    : profile.first_name 
-      ? profile.first_name.substring(0, 2).toUpperCase()
-      : "IM";
-
-  const refresh = useCallback(async () => {
-    try {
-      const [exps, cats] = await Promise.all([getExpenses(), getCustomCategories()]);
-      setExpenses(exps);
-      setCustomCategories(cats);
-    } catch (err) {
-      toast.error((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { refresh(); }, [refresh]);
-
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteExpense(id);
-      refresh();
-    } catch (err) {
-      toast.error((err as Error).message);
-    }
+  const handleDelete = (id: string) => {
+    remove.mutate(id, { onError: (err) => toast.error(err.message) });
   };
 
-  const settings = JSON.parse(localStorage.getItem("fluxo_settings") || "{}");
-  const range = getPeriodRange(settings);
-  const currencySymbol = getCurrencySymbol(settings.currency || "USD");
-  
+  // Current cycle and the matching week of the previous cycle (weekly pulse).
   const now = new Date();
-  const activeCycle = getActiveSalaryCycleRange(now);
-  const currentWeek = getCycleWeekRange(now, activeCycle.start);
-  const prevWeek = getPreviousCycleWeekRange(currentWeek.start);
+  const cycle = getCycleRange(now, settings.cycleDay);
+  const weekIndex = getCycleWeekIndex(cycle, now);
+  const currentWeek = getCycleWeek(cycle, weekIndex);
+  const prevWeek = getCycleWeek(getPreviousRange(cycle, "cycle", scopeOptions)!, weekIndex);
 
-  const { data: cycleExpenses = [] } = useExpenses(activeCycle.start, activeCycle.end);
-  const { data: currentWeekExpenses = [] } = useExpenses(currentWeek.start, currentWeek.end);
-  const { data: prevWeekExpenses = [] } = useExpenses(prevWeek.start, prevWeek.end);
+  // The Spending Circle follows the default view chosen in Profile.
+  const chartRange = getScopeRange(settings.defaultScope, now, scopeOptions);
 
-  const cycleTotal = cycleExpenses.reduce((s, e) => s + Number(e.amount), 0);
-  const currentWeekTotal = currentWeekExpenses.reduce((s, e) => s + Number(e.amount), 0);
-  const prevWeekTotal = prevWeekExpenses.reduce((s, e) => s + Number(e.amount), 0);
+  const { data: cycleExpenses = [] } = useExpenses(cycle);
+  const { data: currentWeekExpenses = [] } = useExpenses(currentWeek);
+  const { data: prevWeekExpenses = [] } = useExpenses(prevWeek);
+  const { data: chartExpenses = [] } = useExpenses(chartRange);
 
-  const periodExpenses = expenses.filter((e) => {
-    try {
-      return isWithinInterval(new Date(e.date), range);
-    } catch (err) {
-      return false;
-    }
-  });
+  const cycleSplit = splitByCurrency(cycleExpenses, mainCurrency);
+  const cycleTotal = sumAmounts(cycleSplit.main);
+  const currentWeekTotal = sumAmounts(splitByCurrency(currentWeekExpenses, mainCurrency).main);
+  const prevWeekTotal = sumAmounts(splitByCurrency(prevWeekExpenses, mainCurrency).main);
 
-  const periodTotal = periodExpenses.reduce((s, e) => s + e.amount, 0);
-
-  if (loading) {
+  if (loadingProfile || loadingRecent) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -119,7 +80,7 @@ const Dashboard = () => {
             Welcome back <HandWaving size={16} className="text-yellow" weight="fill" />
           </p>
           <h2 className="font-display font-bold text-xl text-foreground">
-            {displayName || "Flux-o"}
+            {displayName}
           </h2>
         </div>
         <div className="flex items-center gap-2">
@@ -140,16 +101,18 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Metrics Area */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          <BalanceCard 
-            cycleTotal={cycleTotal} 
-            currentWeekTotal={currentWeekTotal} 
-            prevWeekTotal={prevWeekTotal} 
-            currencySymbol={currencySymbol} 
+          <BalanceCard
+            cycleTotal={cycleTotal}
+            currentWeekTotal={currentWeekTotal}
+            prevWeekTotal={prevWeekTotal}
+            currency={mainCurrency}
+            otherCurrencies={cycleSplit.others}
           />
-          <SpendingChart 
-            expenses={periodExpenses} 
-            customCategories={customCategories} 
-            dateRange={settings.periodType === 'all' ? 'All Time' : `${format(range.start, 'MMM d')} - ${format(range.end, 'MMM d')}`}
+          <SpendingChart
+            expenses={chartExpenses}
+            customCategories={customCategories}
+            mainCurrency={mainCurrency}
+            dateRange={settings.defaultScope === "all" ? "All Time" : `${format(chartRange.start, "MMM d")} - ${format(lastDayOf(chartRange), "MMM d")}`}
           />
         </div>
 
@@ -157,19 +120,20 @@ const Dashboard = () => {
         <div className="flex flex-col gap-6">
           <div className="bg-card/40 backdrop-blur-xl border border-glass-border rounded-2xl p-6 shadow-xl shadow-black/5 flex flex-col h-full max-h-[600px]">
             <h3 className="font-display font-bold text-foreground mb-4 text-sm">Recent Transactions</h3>
-            {expenses.length === 0 ? (
+            {recentExpenses.length === 0 ? (
               <div className="flex-1 flex items-center justify-center text-center py-6">
                 <p className="text-muted-foreground text-sm">No expenses yet. Tap + to add one!</p>
               </div>
             ) : (
               <div className="flex flex-col gap-3 overflow-y-auto pr-2 scrollbar-none flex-1">
-                {expenses.slice(0, 10).map((exp, i) => (
+                {recentExpenses.map((exp, i) => (
                   <TransactionCard
                     key={exp.id}
                     expense={exp}
                     index={i}
                     onTap={setSelectedExpense}
                     customCategories={customCategories}
+                    mainCurrency={mainCurrency}
                   />
                 ))}
               </div>
@@ -179,6 +143,8 @@ const Dashboard = () => {
       </div>
 
       <motion.button
+        data-testid="add-expense"
+        aria-label="Add expense"
         whileTap={{ scale: 0.85 }}
         whileHover={{ scale: 1.05 }}
         onClick={() => { setExpenseToEdit(null); setShowAdd(true); }}
@@ -190,8 +156,7 @@ const Dashboard = () => {
       <AddExpenseSheet 
         open={showAdd} 
         onClose={() => { setShowAdd(false); setExpenseToEdit(null); }} 
-        onAdded={refresh} 
-        expense={expenseToEdit} 
+        expense={expenseToEdit}
       />
       <ExpenseDetailSheet
         expense={selectedExpense}
@@ -200,6 +165,7 @@ const Dashboard = () => {
         onDelete={handleDelete}
         onEdit={handleEditClick}
         customCategories={customCategories}
+        mainCurrency={mainCurrency}
       />
     </div>
   );

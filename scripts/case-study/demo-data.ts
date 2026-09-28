@@ -123,3 +123,30 @@ export function buildDemoData(): Record<string, Row[]> {
 
   return { expenses, custom_categories: customCategories, profiles };
 }
+
+/**
+ * Applies the v2 migrations to the demo data, mirroring the SQL in
+ * supabase/migrations/ so v2 screenshots see the data exactly as the real
+ * database would after migrating. Each phase adds its step here.
+ */
+export function applyV2Migrations(data: Record<string, Row[]>): Record<string, Row[]> {
+  // 20260928120000_settings_on_profiles.sql: new columns get their defaults.
+  for (const p of data.profiles) {
+    Object.assign(p, {
+      currency: "USD",
+      budget_goal: 2000,
+      billing_cycle_day: 25,
+      default_scope: "cycle",
+      week_starts_on: 1,
+      notifications: { overBudget: true, weeklyReport: false, dailyReminder: false },
+      settings_migrated_at: null,
+    });
+  }
+  // 20260928120100_expense_currency_column.sql: move "[XXX] " into a column.
+  for (const e of data.expenses) {
+    const m = String(e.note ?? "").match(/^\[([A-Z]{3})\]\s?(.*)$/);
+    e.currency = m ? m[1] : null;
+    if (m) e.note = m[2] || null;
+  }
+  return data;
+}

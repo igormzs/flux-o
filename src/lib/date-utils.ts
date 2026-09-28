@@ -1,129 +1,144 @@
-import { 
-  startOfMonth, 
-  endOfMonth, 
-  startOfWeek, 
-  endOfWeek, 
-  subMonths, 
-  addMonths, 
-  setDay, 
-  setDate as setDayOfMonth,
-  isAfter,
-  isBefore,
-  format,
-  setHours,
-  setMinutes,
-  setSeconds,
-  setMilliseconds,
+import {
   addDays,
-  differenceInDays,
+  addMonths,
+  differenceInCalendarDays,
+  getDaysInMonth,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  subDays,
 } from "date-fns";
-import { SALARY_CYCLE_START_DAY } from "./constants";
 
-export type PeriodType = 'all' | 'week' | 'month' | 'billing_cycle' | 'custom';
-
-export interface SettingsData {
-  budgetGoal: number;
-  currency: string;
-  notifications: {
-    overBudget: boolean;
-    weeklyReport: boolean;
-    dailyReminder: boolean;
-  };
-  periodType?: PeriodType;
-  billingCycleStartDay?: number;
-  customStartDate?: string;
-  customEndDate?: string;
+/**
+ * All date ranges in Flux-o are half-open: `start` is included and `end` is
+ * excluded ([start, end)). Consecutive periods share a boundary without
+ * overlapping, so an expense always belongs to exactly one period.
+ *
+ * (v1 used inclusive end dates in some places and not in others, and counted
+ * expenses on the cycle day in two cycles; see docs/case-study.)
+ */
+export interface DateRange {
+  start: Date;
+  end: Date;
 }
 
-export function getPeriodRange(settings: SettingsData): { start: Date, end: Date } {
-  const now = new Date();
-  const type = settings.periodType || 'month';
+/** The ways a period of spending can be scoped. */
+export type Scope = "cycle" | "month" | "week" | "last30" | "custom" | "all";
 
-  switch (type) {
-    case 'all':
-      return { start: new Date(0), end: new Date(2100, 0, 1) };
-    case 'week':
-      return { start: startOfWeek(now), end: endOfWeek(now) };
-    case 'month':
-      return { start: startOfMonth(now), end: endOfMonth(now) };
-    case 'custom':
-      return { 
-        start: settings.customStartDate ? new Date(settings.customStartDate + "T00:00:00") : startOfMonth(now),
-        end: settings.customEndDate ? new Date(settings.customEndDate + "T23:59:59") : endOfMonth(now)
-      };
-    case 'billing_cycle': {
-      const startDay = settings.billingCycleStartDay || 1;
-      let start = setDayOfMonth(new Date(now), startDay);
-      start.setHours(0, 0, 0, 0);
+export interface ScopeOptions {
+  /** Day of the month a billing/salary cycle starts (1–31). */
+  cycleDay: number;
+  /** 0 = Sunday, 1 = Monday. */
+  weekStartsOn?: 0 | 1;
+  /** Required for the "custom" scope. */
+  custom?: DateRange;
+}
 
-      // If today is before the start day of this month, the cycle started last month
-      if (isAfter(start, now)) {
-        start = subMonths(start, 1);
-      }
-      
-      const end = subMonths(addMonths(start, 1), 0); // Effectively start + 1 month
-      // The end should be 1 day before the next start day, or exactly the next start day's 00:00
-      // User says "25th of the previous month to 25th of the next month"
-      // If today is April 1st, and cycle is 25th, it should be March 25th to April 25th.
-      const actualEnd = setDayOfMonth(addMonths(start, 1), startDay);
-      actualEnd.setHours(0, 0, 0, 0);
+export const DEFAULT_CYCLE_DAY = 25;
+export const DEFAULT_WEEK_STARTS_ON = 1;
 
-      return { start, end: actualEnd };
+/** Beginning of time for the "all" scope; far enough back for any real data. */
+const ALL_START = new Date(2000, 0, 1);
+const ALL_END = new Date(2100, 0, 1);
+
+/**
+ * The cycle start inside a given month. A cycle day past the end of the month
+ * snaps to the last day, so cycle day 31 starts on 28/29 Feb and 30 Apr.
+ */
+function cycleStartInMonth(year: number, month: number, cycleDay: number): Date {
+  const days = getDaysInMonth(new Date(year, month, 1));
+  return new Date(year, month, Math.min(Math.max(cycleDay, 1), days));
+}
+
+/** The billing cycle that contains `anchor`. */
+export function getCycleRange(anchor: Date, cycleDay: number): DateRange {
+  const y = anchor.getFullYear();
+  const m = anchor.getMonth();
+  let start = cycleStartInMonth(y, m, cycleDay);
+  if (anchor < start) start = cycleStartInMonth(y, m - 1, cycleDay);
+  const end = cycleStartInMonth(start.getFullYear(), start.getMonth() + 1, cycleDay);
+  return { start, end };
+}
+
+/** The period of the given scope that contains `anchor`. */
+export function getScopeRange(scope: Scope, anchor: Date, opts: ScopeOptions): DateRange {
+  const weekStartsOn = opts.weekStartsOn ?? DEFAULT_WEEK_STARTS_ON;
+  switch (scope) {
+    case "cycle":
+      return getCycleRange(anchor, opts.cycleDay);
+    case "month": {
+      const start = startOfMonth(anchor);
+      return { start, end: addMonths(start, 1) };
     }
-    default:
-      return { start: startOfMonth(now), end: endOfMonth(now) };
+    case "week": {
+      const start = startOfWeek(anchor, { weekStartsOn });
+      return { start, end: addDays(start, 7) };
+    }
+    case "last30": {
+      const end = addDays(startOfDay(anchor), 1);
+      return { start: subDays(end, 30), end };
+    }
+    case "custom":
+      if (!opts.custom) throw new Error("custom scope needs a range");
+      return opts.custom;
+    case "all":
+      return { start: ALL_START, end: ALL_END };
   }
 }
 
-export function getSalaryCycleRange(date: Date): { start: Date; end: Date } {
-  const end = setHours(setMinutes(setSeconds(setMilliseconds(setDayOfMonth(new Date(date), SALARY_CYCLE_START_DAY), 999), 59), 59), 23);
-  const start = setHours(setMinutes(setSeconds(setMilliseconds(setDayOfMonth(subMonths(new Date(date), 1), SALARY_CYCLE_START_DAY), 0), 0), 0), 0);
-  return { start, end };
-}
-
-export function getActiveSalaryCycleRange(date: Date): { start: Date; end: Date } {
-  const day = date.getDate();
-  let start: Date;
-  
-  if (day >= SALARY_CYCLE_START_DAY) {
-    start = setDayOfMonth(new Date(date), SALARY_CYCLE_START_DAY);
-  } else {
-    start = setDayOfMonth(subMonths(new Date(date), 1), SALARY_CYCLE_START_DAY);
+/**
+ * The period of the same kind that comes right before `range`: last cycle,
+ * last month, last week, or (for last30/custom) the same number of days
+ * immediately before. Returns null for "all".
+ */
+export function getPreviousRange(range: DateRange, scope: Scope, opts: ScopeOptions): DateRange | null {
+  const justBefore = new Date(range.start.getTime() - 1);
+  switch (scope) {
+    case "cycle":
+    case "month":
+    case "week":
+      return getScopeRange(scope, justBefore, opts);
+    case "last30":
+    case "custom": {
+      const days = differenceInCalendarDays(range.end, range.start);
+      return { start: subDays(range.start, days), end: range.start };
+    }
+    case "all":
+      return null;
   }
-  
-  start.setHours(0, 0, 0, 0);
-  // End is the day before the next cycle start
-  const end = setDayOfMonth(addMonths(start, 1), SALARY_CYCLE_START_DAY - 1);
-  end.setHours(23, 59, 59, 999);
-  
-  return { start, end };
 }
 
-export function getCycleWeekRange(date: Date, cycleStart: Date): { start: Date; end: Date } {
-  const diff = differenceInDays(date, cycleStart);
-  const weekNum = Math.floor(Math.max(0, diff) / 7);
-  
-  const start = addDays(new Date(cycleStart), weekNum * 7);
-  start.setHours(0, 0, 0, 0);
-  
-  const end = addDays(new Date(start), 6);
-  end.setHours(23, 59, 59, 999);
-  
-  return { start, end };
+/** Custom range from inclusive calendar days (as picked in a date picker). */
+export function rangeFromDays(from: Date, to: Date): DateRange {
+  return { start: startOfDay(from), end: addDays(startOfDay(to), 1) };
 }
 
-export function getPreviousCycleWeekRange(currentWeekStart: Date): { start: Date; end: Date } {
-  const start = subMonths(new Date(currentWeekStart), 1);
-  start.setHours(0, 0, 0, 0);
-  
-  const end = addDays(new Date(start), 6);
-  end.setHours(23, 59, 59, 999);
-  
-  return { start, end };
+/** The last day included in a half-open range, for display ("Aug 25 – Sep 24"). */
+export function lastDayOf(range: DateRange): Date {
+  return subDays(range.end, 1);
 }
 
-export function getEquivalentPeriodLastMonth(start: Date, end: Date): { start: Date; end: Date } {
-  const prevStart = subMonths(new Date(start), 1);
-  const prevEnd = subMonths(new Date(end), 1);
-  return { start: prevStart, end: prevEnd };
+export function isInRange(date: Date | string, range: DateRange): boolean {
+  const t = new Date(date).getTime();
+  return t >= range.start.getTime() && t < range.end.getTime();
+}
+
+/**
+ * Week N (0-based) of a cycle: cycle start + 7N days, clipped to the cycle end.
+ * The last week of a cycle can be shorter than 7 days.
+ */
+export function getCycleWeek(cycle: DateRange, index: number): DateRange {
+  const start = addDays(cycle.start, index * 7);
+  const end = addDays(start, 7);
+  return { start, end: end > cycle.end ? cycle.end : end };
+}
+
+/** Index of the cycle week that contains `date`. */
+export function getCycleWeekIndex(cycle: DateRange, date: Date): number {
+  return Math.floor(Math.max(0, differenceInCalendarDays(date, cycle.start)) / 7);
+}
+
+/** Number of (possibly partial) weeks in a range. */
+export function countWeeks(range: DateRange): number {
+  return Math.max(1, Math.ceil(differenceInCalendarDays(range.end, range.start) / 7));
 }

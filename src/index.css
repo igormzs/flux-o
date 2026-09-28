@@ -145,6 +145,41 @@
   .category-pill {
     @apply px-4 py-2 rounded-full text-sm font-medium transition-all duration-200;
   }
+
+  /*
+   * Category colors. Set --cat to the category's hex color (categoryStyle()
+   * in lib/categories.ts). --cat-tone is the same color darkened in light
+   * mode so text and icons stay readable, like v1's per-theme tokens.
+   */
+  .cat {
+    --cat-tone: var(--cat);
+  }
+  .light .cat {
+    --cat-tone: color-mix(in oklab, var(--cat) 72%, black);
+  }
+  /* Darker but just as saturated, like v1's light-theme tokens. */
+  @supports (color: oklch(from red l c h)) {
+    .light .cat {
+      --cat-tone: oklch(from var(--cat) calc(l - 0.15) c h);
+    }
+  }
+  /* Tinted chip: transaction icons, list rows. */
+  .cat-soft {
+    background-color: color-mix(in srgb, var(--cat-tone) 15%, transparent);
+    color: var(--cat-tone);
+  }
+  /* Tinted tile with a border: the category picker. */
+  .cat-tile {
+    background-color: color-mix(in srgb, var(--cat-tone) 20%, transparent);
+    border-color: color-mix(in srgb, var(--cat-tone) 30%, transparent);
+    color: var(--cat-tone);
+  }
+  /* Filled: the selected category. */
+  .cat-solid {
+    background-color: var(--cat-tone);
+    border-color: var(--cat-tone);
+    color: hsl(var(--primary-foreground));
+  }
 }
 
 @layer utilities {

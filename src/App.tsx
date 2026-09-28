@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { useLegacySettingsImport } from "@/hooks/useProfile";
 import BottomNav from "@/components/BottomNav";
 import Sidebar from "@/components/Sidebar";
 import Index from "./pages/Index";
@@ -39,11 +40,18 @@ const AuthRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+/** Uploads v1 localStorage settings to the profile once, after sign-in. */
+const LegacySettingsImport = () => {
+  useLegacySettingsImport();
+  return null;
+};
+
 const AppRoutes = () => {
   const { user } = useAuth();
 
   return (
     <div className={user ? "flex h-screen w-full bg-background overflow-hidden" : ""}>
+      {user && <LegacySettingsImport />}
       {user && <Sidebar />}
       <div className={user ? "flex-1 h-full overflow-y-auto relative w-full" : ""}>
         <Routes>

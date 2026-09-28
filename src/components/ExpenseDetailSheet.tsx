@@ -1,20 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, CalendarBlank, PencilSimple, Trash } from "@phosphor-icons/react";
 import { format } from "date-fns";
-import { Expense, CustomCategory, getCategoryInfo } from "@/lib/expenses";
+import { Expense, CustomCategory } from "@/lib/expenses";
+import { resolveCategory } from "@/lib/categories";
 import CategoryIcon from "./CategoryIcon";
-import { getCurrencySymbol, parseNote } from "@/lib/currencies";
-
-const colorMap: Record<string, string> = {
-  mint: "bg-mint/15 text-mint",
-  teal: "bg-teal/15 text-teal",
-  lavender: "bg-lavender/15 text-lavender",
-  electric: "bg-electric/15 text-electric",
-  pink: "bg-pink/15 text-pink",
-  yellow: "bg-yellow/15 text-yellow",
-  peach: "bg-peach/15 text-peach",
-  coral: "bg-coral/15 text-coral",
-};
+import { expenseCurrency, formatMoney } from "@/lib/currencies";
 
 interface ExpenseDetailSheetProps {
   expense: Expense | null;
@@ -23,15 +13,13 @@ interface ExpenseDetailSheetProps {
   onDelete: (id: string) => void;
   onEdit: (expense: Expense) => void;
   customCategories: CustomCategory[];
+  mainCurrency: string;
 }
 
-const ExpenseDetailSheet = ({ expense, open, onClose, onDelete, onEdit, customCategories }: ExpenseDetailSheetProps) => {
+const ExpenseDetailSheet = ({ expense, open, onClose, onDelete, onEdit, customCategories, mainCurrency }: ExpenseDetailSheetProps) => {
   if (!expense) return null;
-  const cat = getCategoryInfo(expense.category, customCategories);
-  const { currency, note: cleanDescription } = parseNote(expense.note);
-  const settings = JSON.parse(localStorage.getItem("fluxo_settings") || "{}");
-  const displayCurrency = currency || settings.currency || "USD";
-  const symbol = getCurrencySymbol(displayCurrency);
+  const cat = resolveCategory(expense.category, customCategories);
+  const cleanDescription = expense.note;
 
   return (
     <AnimatePresence>
@@ -76,7 +64,7 @@ const ExpenseDetailSheet = ({ expense, open, onClose, onDelete, onEdit, customCa
               <div>
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">{cat.label}</p>
                 <p className="text-4xl font-display font-bold text-foreground slashed-zero">
-                  {symbol}{Number(expense.amount).toFixed(2)}
+                  {formatMoney(Number(expense.amount), expenseCurrency(expense, mainCurrency))}
                 </p>
               </div>
             </div>

@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Camera, CalendarBlank } from "@phosphor-icons/react";
-import { DEFAULT_CATEGORIES, saveExpense, updateExpense, getCustomCategories, createCustomCategory, uploadExpenseImage, CustomCategory, Expense } from "@/lib/expenses";
-import { CURRENCIES, parseNote, stringifyNote } from "@/lib/currencies";
+import { uploadExpenseImage, Expense } from "@/lib/expenses";
+import { allCategories, categoryStyle, LEGACY_COLORS } from "@/lib/categories";
+import { CURRENCIES } from "@/lib/currencies";
+import { useCreateCategory, useCustomCategories, useExpenseMutations } from "@/hooks/useExpenses";
+import { useSettings } from "@/hooks/useProfile";
 import CategoryIcon from "./CategoryIcon";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -13,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const COLORS = ["mint", "teal", "lavender", "electric", "pink", "yellow", "peach", "coral"];
+const COLORS = Object.values(LEGACY_COLORS);
 
 const PHOSPHOR_ICONS = [
   "Pizza", "ShoppingCart", "House", "Television", "BeerBottle", "Plug", "Gift", "AirplaneTilt",
@@ -22,32 +25,10 @@ const PHOSPHOR_ICONS = [
   "Phone", "Laptop", "Book", "Briefcase", "ShoppingBag", "Baby",
 ];
 
-const colorBgMap: Record<string, string> = {
-  mint: "bg-mint/20 border-mint/30 text-mint",
-  teal: "bg-teal/20 border-teal/30 text-teal",
-  lavender: "bg-lavender/20 border-lavender/30 text-lavender",
-  electric: "bg-electric/20 border-electric/30 text-electric",
-  pink: "bg-pink/20 border-pink/30 text-pink",
-  yellow: "bg-yellow/20 border-yellow/30 text-yellow",
-  peach: "bg-peach/20 border-peach/30 text-peach",
-  coral: "bg-coral/20 border-coral/30 text-coral",
-};
-
-const selectedMap: Record<string, string> = {
-  mint: "bg-mint text-primary-foreground",
-  teal: "bg-teal text-primary-foreground",
-  lavender: "bg-lavender text-primary-foreground",
-  electric: "bg-electric text-primary-foreground",
-  pink: "bg-pink text-primary-foreground",
-  yellow: "bg-yellow text-primary-foreground",
-  peach: "bg-peach text-primary-foreground",
-  coral: "bg-coral text-primary-foreground",
-};
-
 interface AddExpenseSheetProps {
   open: boolean;
   onClose: () => void;
-  onAdded: () => void;
+  onAdded?: () => void;
   expense?: Expense | null;
 }
 
@@ -61,25 +42,23 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
+  const { settings } = useSettings();
+  const { data: customCategories = [] } = useCustomCategories();
+  const createCategory = useCreateCategory();
+  const { save, update } = useExpenseMutations();
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [newCatLabel, setNewCatLabel] = useState("");
   const [newCatIcon, setNewCatIcon] = useState("Star");
-  const [newCatColor, setNewCatColor] = useState("mint");
+  const [newCatColor, setNewCatColor] = useState(COLORS[0]);
 
   useEffect(() => {
     if (open) {
-      getCustomCategories().then(setCustomCategories).catch(console.error);
+      const globalCurrency = settings.currency;
 
-      // Load global currency default
-      const rawSettings = localStorage.getItem("fluxo_settings");
-      const globalCurrency = rawSettings ? JSON.parse(rawSettings).currency : "USD";
-      
       if (expense) {
         setTitle(expense.title);
-        const { currency: expCurrency, note: expNote } = parseNote(expense.note);
-        setCurrency(expCurrency || globalCurrency);
-        setDescription(expNote);
+        setCurrency(expense.currency ?? globalCurrency);
+        setDescription(expense.note ?? "");
         setAmount(expense.amount.toString());
         setCategory(expense.category);
         setDate(format(new Date(expense.date), "yyyy-MM-dd"));
@@ -97,7 +76,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
         setImagePreview(null);
       }
     }
-  }, [open, expense]);
+  }, [open, expense, settings.currency]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -110,8 +89,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
   const handleCreateCategory = async () => {
     if (!newCatLabel.trim()) return;
     try {
-      const cat = await createCustomCategory({ label: newCatLabel.trim(), icon: newCatIcon, color: newCatColor });
-      setCustomCategories((prev) => [...prev, cat]);
+      const cat = await createCategory.mutateAsync({ label: newCatLabel.trim(), icon: newCatIcon, color: newCatColor });
       setCategory(cat.id);
       setShowNewCategory(false);
       setNewCatLabel("");
@@ -144,16 +122,17 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
         title: title.trim(),
         amount: parseFloat(amount),
         category,
-        note: stringifyNote(currency, description.trim()),
+        currency,
+        note: description.trim() || null,
         date: dateToSave,
         image_url: imageUrl,
       };
 
       if (expense) {
-        await updateExpense(expense.id, payload);
+        await update.mutateAsync({ id: expense.id, input: payload });
         toast.success("Expense updated!");
       } else {
-        await saveExpense(payload);
+        await save.mutateAsync(payload);
         toast.success("Expense added!");
       }
 
@@ -164,7 +143,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
       setDate(format(new Date(), "yyyy-MM-dd"));
       setImageFile(null);
       setImagePreview(null);
-      onAdded();
+      onAdded?.();
       onClose();
     } catch (err) {
       toast.error((err as Error).message);
@@ -173,10 +152,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
     }
   };
 
-  const allCategories = [
-    ...DEFAULT_CATEGORIES.map((c) => ({ ...c, isCustom: false })),
-    ...customCategories.map((c) => ({ id: c.id, label: c.label, icon: c.icon, color: c.color, isCustom: true })),
-  ];
+  const categories = allCategories(customCategories);
 
   return (
     <AnimatePresence>
@@ -319,20 +295,23 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
             <div className="mb-6">
               <label className="text-sm text-muted-foreground mb-2 block">Category</label>
               <div className="grid grid-cols-4 gap-2">
-                {allCategories.map((cat) => (
+                {categories.map((cat) => (
                   <button
                     key={cat.id}
+                    data-testid={`category-${cat.id}`}
                     onClick={() => setCategory(cat.id)}
-                    className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border transition-all duration-200 text-xs ${
-                      category === cat.id ? selectedMap[cat.color] : colorBgMap[cat.color]
+                    style={categoryStyle(cat.color)}
+                    className={`cat flex flex-col items-center gap-1 p-2.5 rounded-xl border transition-all duration-200 text-xs ${
+                      category === cat.id ? "cat-solid" : "cat-tile"
                     }`}
                   >
-                    <CategoryIcon categoryId={cat.isCustom ? "__custom__" : cat.id} customIcon={cat.icon} size={22} />
+                    <CategoryIcon categoryId={cat.id} customIcon={cat.icon} size={22} />
                     <span className="font-medium truncate w-full text-center text-[10px]">{cat.label}</span>
                   </button>
                 ))}
                 {/* Add new category button */}
                 <button
+                  data-testid="new-category"
                   onClick={() => setShowNewCategory(true)}
                   className="flex flex-col items-center gap-1 p-2.5 rounded-xl border border-dashed border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all"
                 >
@@ -387,10 +366,11 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
                           <button
                             key={c}
                             onClick={() => setNewCatColor(c)}
-                            className={`w-7 h-7 rounded-full transition-all ${
+                            aria-label={`Color ${c}`}
+                            className={`cat w-7 h-7 rounded-full transition-all bg-[var(--cat-tone)] ${
                               newCatColor === c ? "ring-2 ring-foreground ring-offset-2 ring-offset-card" : ""
                             }`}
-                            style={{ backgroundColor: `hsl(var(--${c}))` }}
+                            style={categoryStyle(c)}
                           />
                         ))}
                       </div>

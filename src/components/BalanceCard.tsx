@@ -1,15 +1,19 @@
 import { motion } from "framer-motion";
 import { ChartLineUp, TrendUp, TrendDown } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/currencies";
+import OtherCurrenciesNote from "./OtherCurrenciesNote";
 
 interface BalanceCardProps {
   cycleTotal: number;
   currentWeekTotal: number;
   prevWeekTotal: number;
-  currencySymbol: string;
+  currency: string;
+  /** Totals in currencies other than `currency`, shown separately. */
+  otherCurrencies?: Record<string, number>;
 }
 
-const BalanceCard = ({ cycleTotal, currentWeekTotal, prevWeekTotal, currencySymbol }: BalanceCardProps) => {
+const BalanceCard = ({ cycleTotal, currentWeekTotal, prevWeekTotal, currency, otherCurrencies = {} }: BalanceCardProps) => {
   const diff = currentWeekTotal - prevWeekTotal;
   const isSpendingLower = diff <= 0;
   const percentage = prevWeekTotal > 0 
@@ -32,8 +36,9 @@ const BalanceCard = ({ cycleTotal, currentWeekTotal, prevWeekTotal, currencySymb
             Total Spending
           </p>
           <h1 className="text-5xl md:text-6xl font-display font-bold text-foreground tracking-tight">
-            {currencySymbol}{cycleTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatMoney(cycleTotal, currency)}
           </h1>
+          <OtherCurrenciesNote totals={otherCurrencies} className="mt-2" />
         </div>
 
         <div className="pt-6 border-t border-glass-border/50">
@@ -54,7 +59,7 @@ const BalanceCard = ({ cycleTotal, currentWeekTotal, prevWeekTotal, currencySymb
               
               <div className="flex flex-col justify-center">
                 <span className="text-foreground font-bold font-display text-lg leading-tight">
-                  {diff > 0 ? "+" : "-"}{currencySymbol}{Math.abs(diff).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  {diff > 0 ? "+" : "-"}{formatMoney(Math.abs(diff), currency)}
                 </span>
                 <span className="text-muted-foreground text-[10px] font-medium font-body">
                   vs. same week last cycle

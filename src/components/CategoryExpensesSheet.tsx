@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "@phosphor-icons/react";
-import { Expense, getCategoryInfo, CustomCategory } from "@/lib/expenses";
+import { Expense, CustomCategory } from "@/lib/expenses";
+import { resolveCategory } from "@/lib/categories";
 import { format } from "date-fns";
 import CategoryIcon from "./CategoryIcon";
-import { getCurrencySymbol, parseNote } from "@/lib/currencies";
+import { expenseCurrency, formatMoney, splitByCurrency, sumAmounts } from "@/lib/currencies";
 
 interface CategoryExpensesSheetProps {
   open: boolean;
@@ -11,17 +12,17 @@ interface CategoryExpensesSheetProps {
   categoryId: string;
   expenses: Expense[];
   customCategories?: CustomCategory[];
+  mainCurrency: string;
 }
 
-const CategoryExpensesSheet = ({ open, onClose, categoryId, expenses, customCategories = [] }: CategoryExpensesSheetProps) => {
-  const cat = getCategoryInfo(categoryId, customCategories);
+const CategoryExpensesSheet = ({ open, onClose, categoryId, expenses, customCategories = [], mainCurrency }: CategoryExpensesSheetProps) => {
+  const cat = resolveCategory(categoryId, customCategories);
   const filtered = expenses.filter((e) => e.category === categoryId).sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
   
-  const settings = JSON.parse(localStorage.getItem("fluxo_settings") || "{}");
-  const globalSymbol = getCurrencySymbol(settings.currency || "USD");
-  const total = filtered.reduce((s, e) => s + Number(e.amount), 0);
+  // Only amounts in the main currency are added up.
+  const total = sumAmounts(splitByCurrency(filtered, mainCurrency).main);
 
   return (
     <AnimatePresence>
@@ -48,7 +49,7 @@ const CategoryExpensesSheet = ({ open, onClose, categoryId, expenses, customCate
                 </div>
                 <div>
                   <h2 className="font-display font-bold text-lg text-foreground">{cat.label}</h2>
-                  <p className="text-sm text-muted-foreground">{filtered.length} expenses · {globalSymbol}{total.toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground">{filtered.length} expenses · {formatMoney(total, mainCurrency)}</p>
                 </div>
               </div>
               <button
@@ -64,8 +65,6 @@ const CategoryExpensesSheet = ({ open, onClose, categoryId, expenses, customCate
             ) : (
               <div className="space-y-2">
                 {filtered.map((exp) => {
-                  const { currency } = parseNote(exp.note);
-                  const itemSymbol = getCurrencySymbol(currency || settings.currency || "USD");
                   return (
                     <motion.div
                       key={exp.id}
@@ -77,7 +76,7 @@ const CategoryExpensesSheet = ({ open, onClose, categoryId, expenses, customCate
                         <p className="text-sm font-medium text-foreground">{exp.title || cat.label}</p>
                         <p className="text-xs text-muted-foreground">{format(new Date(exp.date), "MMM d, yyyy")}</p>
                       </div>
-                      <span className="font-display font-bold text-foreground">-{itemSymbol}{Number(exp.amount).toFixed(2)}</span>
+                      <span className="font-display font-bold text-foreground">-{formatMoney(Number(exp.amount), expenseCurrency(exp, mainCurrency))}</span>
                     </motion.div>
                   );
                 })}

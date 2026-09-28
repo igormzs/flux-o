@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Camera, User, SignOut, Trash, Check, CalendarBlank } from "@phosphor-icons/react";
-import { format } from "date-fns";
+import { motion } from "framer-motion";
+import { ArrowLeft, Camera, User, SignOut, Trash, Check } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,58 +9,46 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { CURRENCIES } from "@/lib/currencies";
+import { useProfile, useSettings, useUpdateProfile, useUpdateSettings } from "@/hooks/useProfile";
+import type { DefaultScope, Settings } from "@/lib/settings";
 
-import { SettingsData, PeriodType } from "@/lib/date-utils";
-const SETTINGS_KEY = "fluxo_settings";
-function loadSettings(): SettingsData {
-  const raw = localStorage.getItem(SETTINGS_KEY);
-  if (raw) return JSON.parse(raw);
-  return { 
-    budgetGoal: 2000, 
-    currency: "USD", 
-    notifications: { overBudget: true, weeklyReport: false, dailyReminder: false },
-    periodType: 'month',
-    billingCycleStartDay: 25
-  };
-}
-function saveSettingsLocal(data: SettingsData) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(data));
-}
+const SCOPE_LABELS: Record<DefaultScope, string> = {
+  cycle: "Billing cycle",
+  month: "Month",
+  week: "Week",
+  last30: "Last 30 days",
+  all: "All time",
+};
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const { data: profile, isLoading: loadingProfile } = useProfile();
+  const { settings } = useSettings();
+  const updateProfile = useUpdateProfile();
+  const updateSettings = useUpdateSettings();
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
-  
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [savingSettings, setSavingSettings] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(true);
-  const [settings, setSettings] = useState<SettingsData>(loadSettings);
-  const [pendingSettings, setPendingSettings] = useState<SettingsData>(loadSettings);
+  const [pendingSettings, setPendingSettings] = useState<Settings>(settings);
+
+  // Fill the forms once the profile arrives.
+  useEffect(() => {
+    if (!profile) return;
+    setFirstName(profile.first_name || "");
+    setLastName(profile.last_name || "");
+    setUsername(profile.username || "");
+  }, [profile]);
 
   useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single()
-      .then(({ data, error }) => {
-        if (data) {
-          const profileData = data as { first_name?: string; last_name?: string; username?: string; avatar_url?: string };
-          setFirstName(profileData.first_name || "");
-          setLastName(profileData.last_name || "");
-          setUsername(profileData.username || "");
-          setAvatarUrl(profileData.avatar_url || null);
-        }
-        setLoadingProfile(false);
-      });
-  }, [user]);
+    setPendingSettings(settings);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when the saved values change
+  }, [JSON.stringify(settings)]);
+
+  const avatarUrl = profile?.avatar_url ?? null;
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -76,44 +63,31 @@ const Profile = () => {
 
     const { data } = supabase.storage.from("expense-images").getPublicUrl(path);
     const url = data.publicUrl + "?t=" + Date.now();
-    setAvatarUrl(url);
-
-    await supabase.from("profiles").update({ avatar_url: url }).eq("id", user.id);
-    toast.success("Avatar updated!");
+    updateProfile.mutate({ avatar_url: url }, {
+      onSuccess: () => toast.success("Avatar updated!"),
+      onError: (err) => toast.error(err.message),
+    });
   };
 
-  const handleSaveProfile = async () => {
-    if (!user) return;
-    setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ first_name: firstName, last_name: lastName, username, updated_at: new Date().toISOString() } as Record<string, unknown>)
-      .eq("id", user.id);
-    setSaving(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      const nameToStore = firstName || username || user.email?.split("@")[0] || "there";
-      localStorage.setItem("fluxo_display_name", nameToStore);
-      toast.success("Profile saved!");
-    }
+  const handleSaveProfile = () => {
+    updateProfile.mutate({ first_name: firstName, last_name: lastName, username }, {
+      onSuccess: () => toast.success("Profile saved!"),
+      onError: (err) => toast.error(err.message),
+    });
   };
 
   const handleSaveSettings = () => {
-    setSavingSettings(true);
-    saveSettingsLocal(pendingSettings);
-    setSettings(pendingSettings);
-    setTimeout(() => {
-      setSavingSettings(false);
-      toast.success("Settings saved!");
-    }, 500);
+    updateSettings.mutate(pendingSettings, {
+      onSuccess: () => toast.success("Settings saved!"),
+      onError: (err) => toast.error(err.message),
+    });
   };
 
-  const updatePendingSetting = (patch: Partial<SettingsData>) => {
+  const updatePendingSetting = (patch: Partial<Settings>) => {
     setPendingSettings((prev) => ({ ...prev, ...patch }));
   };
 
-  const updatePendingNotif = (key: keyof SettingsData["notifications"], val: boolean) => {
+  const updatePendingNotif = (key: keyof Settings["notifications"], val: boolean) => {
     setPendingSettings((prev) => ({ ...prev, notifications: { ...prev.notifications, [key]: val } }));
   };
 
@@ -191,10 +165,10 @@ const Profile = () => {
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={handleSaveProfile}
-            disabled={saving}
+            disabled={updateProfile.isPending}
             className="w-full h-10 rounded-xl bg-primary text-primary-foreground font-display font-bold text-sm disabled:opacity-50"
           >
-            {saving ? "Saving..." : "Save Profile"}
+            {updateProfile.isPending ? "Saving..." : "Save Profile"}
           </motion.button>
         </div>
       </motion.div>
@@ -234,96 +208,46 @@ const Profile = () => {
             </div>
           </div>
 
+          {/* Billing cycle day: used by the Home total and the Insights cycles */}
+          <div>
+            <label htmlFor="cycle-day" className="text-xs text-muted-foreground block mb-2">Billing Cycle Start Day</label>
+            <Input
+              id="cycle-day"
+              type="number"
+              min={1}
+              max={31}
+              value={pendingSettings.cycleDay}
+              onChange={(e) => updatePendingSetting({ cycleDay: Math.min(31, Math.max(1, Number(e.target.value) || 1)) })}
+              className="bg-muted border-none text-foreground font-bold h-11 text-sm"
+            />
+            <p className="text-[11px] text-muted-foreground mt-1.5">
+              Your cycle runs from day {pendingSettings.cycleDay} to the day before it next month. Days past a month's end use its last day.
+            </p>
+          </div>
+
           {/* Display Period */}
           <div>
             <label className="text-xs text-muted-foreground block mb-2">Display Period</label>
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              {(['week', 'month', 'billing_cycle', 'custom', 'all'] as PeriodType[]).map((type) => (
+            <div className="grid grid-cols-2 gap-2">
+              {(Object.keys(SCOPE_LABELS) as DefaultScope[]).map((scope) => (
                 <button
-                  key={type}
-                  onClick={() => updatePendingSetting({ periodType: type })}
-                  className={`rounded-xl px-3 py-2.5 text-[10px] uppercase font-bold tracking-tight transition-all ${pendingSettings.periodType === type ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                  key={scope}
+                  onClick={() => updatePendingSetting({ defaultScope: scope })}
+                  className={`rounded-xl px-3 py-2.5 text-[10px] uppercase font-bold tracking-tight transition-all ${pendingSettings.defaultScope === scope ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
                 >
-                  {type.replace('_', ' ')}
+                  {SCOPE_LABELS[scope]}
                 </button>
               ))}
             </div>
-
-            <AnimatePresence>
-              {pendingSettings.periodType === 'billing_cycle' && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="p-3 rounded-xl bg-muted/40 border border-glass-border mb-3 overflow-hidden"
-                >
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase mb-1.5 block">Billing Cycle Start Day</label>
-                  <Input 
-                    type="number" 
-                    min={1} 
-                    max={31} 
-                    value={pendingSettings.billingCycleStartDay || 25} 
-                    onChange={(e) => updatePendingSetting({ billingCycleStartDay: Number(e.target.value) })} 
-                    className="bg-muted border-none text-foreground font-bold h-9 text-sm" 
-                  />
-                </motion.div>
-              )}
-
-              {pendingSettings.periodType === 'custom' && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="p-3 rounded-xl bg-muted/40 border border-glass-border mb-3 overflow-hidden"
-                >
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase mb-1.5 block">Start Date</label>
-                      <div className="relative h-10">
-                        <div className="absolute inset-0 flex items-center gap-2 bg-muted rounded-lg px-3 pointer-events-none border border-transparent transition-all">
-                          <CalendarBlank size={14} className="text-muted-foreground" />
-                          <span className="text-foreground text-xs font-medium">
-                            {pendingSettings.customStartDate ? format(new Date(pendingSettings.customStartDate + "T00:00:00"), "dd/MM/yy") : "--/--/--"}
-                          </span>
-                        </div>
-                        <input
-                          type="date"
-                          value={pendingSettings.customStartDate || ""}
-                          onChange={(e) => updatePendingSetting({ customStartDate: e.target.value })}
-                          className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase mb-1.5 block">End Date</label>
-                      <div className="relative h-10">
-                        <div className="absolute inset-0 flex items-center gap-2 bg-muted rounded-lg px-3 pointer-events-none border border-transparent transition-all">
-                          <CalendarBlank size={14} className="text-muted-foreground" />
-                          <span className="text-foreground text-xs font-medium">
-                            {pendingSettings.customEndDate ? format(new Date(pendingSettings.customEndDate + "T00:00:00"), "dd/MM/yy") : "--/--/--"}
-                          </span>
-                        </div>
-                        <input
-                          type="date"
-                          value={pendingSettings.customEndDate || ""}
-                          onChange={(e) => updatePendingSetting({ customEndDate: e.target.value })}
-                          className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
 
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={handleSaveSettings}
-            disabled={savingSettings}
+            disabled={updateSettings.isPending}
             className="w-full h-10 rounded-xl bg-primary/10 text-primary border border-primary/20 font-display font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
           >
-            {savingSettings ? "Saving..." : (
+            {updateSettings.isPending ? "Saving..." : (
               <>
                 <Check size={16} weight="bold" />
                 Save Settings

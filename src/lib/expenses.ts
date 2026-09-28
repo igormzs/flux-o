@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { DateRange } from "./date-utils";
 
 export interface Expense {
   id: string;
@@ -7,6 +8,8 @@ export interface Expense {
   amount: number;
   category: string;
   custom_category_id: string | null;
+  /** ISO code; null means the user's main currency. */
+  currency: string | null;
   note: string | null;
   image_url: string | null;
   date: string;
@@ -23,35 +26,40 @@ export interface CustomCategory {
   created_at: string;
 }
 
-export const DEFAULT_CATEGORIES = [
-  { id: "food", label: "Food", icon: "Pizza", color: "mint" },
-  { id: "grocery", label: "Grocery", icon: "ShoppingCart", color: "peach" },
-  { id: "rent", label: "Rent", icon: "House", color: "lavender" },
-  { id: "subscriptions", label: "Subs", icon: "Television", color: "electric" },
-  { id: "nightlife", label: "Drinks", icon: "BeerBottle", color: "pink" },
-  { id: "utilities", label: "Utilities", icon: "Plug", color: "yellow" },
-  { id: "selfcare", label: "Self-care", icon: "Gift", color: "teal" },
-  { id: "travel", label: "Travel", icon: "AirplaneTilt", color: "coral" },
-] as const;
+export interface ExpenseInput {
+  title: string;
+  amount: number;
+  category: string;
+  currency?: string | null;
+  custom_category_id?: string | null;
+  note?: string | null;
+  image_url?: string | null;
+  date: string;
+}
 
-export async function getExpenses() {
+/** Expenses with `range.start <= date < range.end`, newest first. */
+export async function getExpensesInRange(range: DateRange) {
   const { data, error } = await supabase
     .from("expenses")
     .select("*")
+    .gte("date", range.start.toISOString())
+    .lt("date", range.end.toISOString())
     .order("date", { ascending: false });
   if (error) throw error;
   return data as Expense[];
 }
 
-export async function saveExpense(expense: {
-  title: string;
-  amount: number;
-  category: string;
-  custom_category_id?: string | null;
-  note?: string;
-  image_url?: string | null;
-  date: string;
-}) {
+export async function getRecentExpenses(limit: number) {
+  const { data, error } = await supabase
+    .from("expenses")
+    .select("*")
+    .order("date", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data as Expense[];
+}
+
+export async function saveExpense(expense: ExpenseInput) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
@@ -64,15 +72,7 @@ export async function saveExpense(expense: {
   return data as Expense;
 }
 
-export async function updateExpense(id: string, expense: {
-  title: string;
-  amount: number;
-  category: string;
-  custom_category_id?: string | null;
-  note?: string;
-  image_url?: string | null;
-  date: string;
-}) {
+export async function updateExpense(id: string, expense: ExpenseInput) {
   const { data, error } = await supabase
     .from("expenses")
     .update(expense)
@@ -130,12 +130,4 @@ export async function uploadExpenseImage(file: File): Promise<string> {
     .from("expense-images")
     .getPublicUrl(path);
   return data.publicUrl;
-}
-
-export function getCategoryInfo(categoryId: string, customCategories: CustomCategory[]) {
-  const defaultCat = DEFAULT_CATEGORIES.find((c) => c.id === categoryId);
-  if (defaultCat) return defaultCat;
-  const custom = customCategories.find((c) => c.id === categoryId);
-  if (custom) return { id: custom.id, label: custom.label, icon: custom.icon, color: custom.color };
-  return { id: categoryId, label: categoryId, icon: "CurrencyDollar", color: "mint" };
 }

@@ -2,45 +2,43 @@ import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
-import { DEFAULT_CATEGORIES, CustomCategory, getCategoryInfo } from "@/lib/expenses";
+import { CustomCategory } from "@/lib/expenses";
 import type { Expense } from "@/lib/expenses";
+import { resolveCategory, gradientStops } from "@/lib/categories";
 import CategoryExpensesSheet from "./CategoryExpensesSheet";
 import CategoryIcon from "./CategoryIcon";
 import { ChartDonut, ChartBar, TrendUp } from "@phosphor-icons/react";
-import { getCurrencySymbol } from "@/lib/currencies";
+import { formatMoney, getCurrencySymbol, splitByCurrency } from "@/lib/currencies";
 
 type ChartType = "donut" | "bar" | "progress";
 
-const GRADIENT_COLORS: Record<string, { from: string; to: string; solid: string }> = {
-  mint: { from: "#4dd8a5", to: "#2ec4a0", solid: "hsl(160, 60%, 60%)" },
-  teal: { from: "#4db8b0", to: "#3aa89e", solid: "hsl(180, 50%, 55%)" },
-  lavender: { from: "#a78bfa", to: "#8b6fdb", solid: "hsl(260, 50%, 70%)" },
-  electric: { from: "#5ba3f5", to: "#4a8ae8", solid: "hsl(210, 90%, 65%)" },
-  pink: { from: "#f472b6", to: "#e05599", solid: "hsl(330, 70%, 70%)" },
-  yellow: { from: "#fbbf24", to: "#f5a623", solid: "hsl(45, 90%, 65%)" },
-  peach: { from: "#f4a574", to: "#e88d5a", solid: "hsl(25, 80%, 70%)" },
-  coral: { from: "#ef7564", to: "#e05e4d", solid: "hsl(10, 75%, 65%)" },
+/** SVG gradient id for a hex color ("#5cd6ad" → "grad-5cd6ad"). */
+const gradId = (prefix: string, color: string) => `${prefix}-${color.replace("#", "")}`;
+const gradientCss = (color: string) => {
+  const { from, to } = gradientStops(color);
+  return `linear-gradient(90deg, ${from}, ${to})`;
 };
 
 interface SpendingChartProps {
   expenses: Expense[];
   customCategories: CustomCategory[];
   dateRange?: string;
+  mainCurrency: string;
 }
 
-const SpendingChart = ({ expenses, customCategories, dateRange }: SpendingChartProps) => {
+const SpendingChart = ({ expenses, customCategories, dateRange, mainCurrency }: SpendingChartProps) => {
   const [chartType, setChartType] = useState<ChartType>("donut");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
-  const settings = JSON.parse(localStorage.getItem("fluxo_settings") || "{}");
-  const currencySymbol = getCurrencySymbol(settings.currency || "USD");
+  const currencySymbol = getCurrencySymbol(mainCurrency);
 
-  // Group by category
-  const categoryIds = new Set(expenses.map((e) => e.category));
+  // Group by category. Only main-currency amounts are charted (no FX rates).
+  const { main } = splitByCurrency(expenses, mainCurrency);
+  const categoryIds = new Set(main.map((e) => e.category));
   const grouped = Array.from(categoryIds).map((catId) => {
-    const total = expenses.filter((e) => e.category === catId).reduce((sum, e) => sum + Number(e.amount), 0);
-    const info = getCategoryInfo(catId, customCategories);
+    const total = main.filter((e) => e.category === catId).reduce((sum, e) => sum + Number(e.amount), 0);
+    const info = resolveCategory(catId, customCategories);
     return { name: info.label, value: total, color: info.color, id: catId, icon: info.icon };
   }).filter((d) => d.value > 0).sort((a, b) => b.value - a.value);
 
@@ -70,22 +68,22 @@ const SpendingChart = ({ expenses, customCategories, dateRange }: SpendingChartP
           <PieChart>
             <defs>
               {grouped.map((entry) => (
-                <linearGradient key={entry.color} id={`grad-${entry.color}`} x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor={GRADIENT_COLORS[entry.color]?.from ?? "#888"} />
-                  <stop offset="100%" stopColor={GRADIENT_COLORS[entry.color]?.to ?? "#666"} />
+                <linearGradient key={entry.id} id={gradId("grad", entry.color)} x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor={gradientStops(entry.color).from} />
+                  <stop offset="100%" stopColor={gradientStops(entry.color).to} />
                 </linearGradient>
               ))}
             </defs>
             <Pie data={grouped} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={4} dataKey="value" strokeWidth={0} cursor="pointer" onClick={(_, index) => handleCategoryClick(grouped[index].id)}>
               {grouped.map((entry, i) => (
-                <Cell key={i} fill={`url(#grad-${entry.color})`} />
+                <Cell key={i} fill={`url(#${gradId("grad", entry.color)})`} />
               ))}
             </Pie>
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mb-0.5">Total</span>
-          <span className="font-display font-bold text-xl text-foreground leading-none">{currencySymbol}{total.toLocaleString("en-US", { minimumFractionDigits: 0 })}</span>
+          <span className="font-display font-bold text-xl text-foreground leading-none">{formatMoney(total, mainCurrency)}</span>
         </div>
       </div>
       {!isMobile && (
@@ -107,7 +105,7 @@ const SpendingChart = ({ expenses, customCategories, dateRange }: SpendingChartP
                   animate={{ width: `${(d.value / total) * 100}%` }} 
                   transition={{ duration: 0.8, ease: "easeOut" }}
                   className="h-full rounded-full" 
-                  style={{ background: `linear-gradient(90deg, ${GRADIENT_COLORS[d.color]?.from ?? "#888"}, ${GRADIENT_COLORS[d.color]?.to ?? "#666"})` }} 
+                  style={{ background: gradientCss(d.color) }} 
                 />
               </div>
             </div>
@@ -123,9 +121,9 @@ const SpendingChart = ({ expenses, customCategories, dateRange }: SpendingChartP
         <BarChart data={grouped} layout="vertical" margin={{ left: 0, right: 8 }}>
           <defs>
             {grouped.map((entry) => (
-              <linearGradient key={entry.color} id={`bar-grad-${entry.color}`} x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor={GRADIENT_COLORS[entry.color]?.from ?? "#888"} />
-                <stop offset="100%" stopColor={GRADIENT_COLORS[entry.color]?.to ?? "#666"} />
+              <linearGradient key={entry.id} id={gradId("bar-grad", entry.color)} x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor={gradientStops(entry.color).from} />
+                <stop offset="100%" stopColor={gradientStops(entry.color).to} />
               </linearGradient>
             ))}
           </defs>
@@ -142,7 +140,7 @@ const SpendingChart = ({ expenses, customCategories, dateRange }: SpendingChartP
           }} />
           <Bar dataKey="value" radius={[0, 8, 8, 0]} cursor="pointer" onClick={(data) => handleCategoryClick(data.id)}>
             {grouped.map((entry, i) => (
-              <Cell key={i} fill={`url(#bar-grad-${entry.color})`} />
+              <Cell key={i} fill={`url(#${gradId("bar-grad", entry.color)})`} />
             ))}
           </Bar>
         </BarChart>
@@ -164,7 +162,7 @@ const SpendingChart = ({ expenses, customCategories, dateRange }: SpendingChartP
               <span className="font-display font-bold text-foreground">{currencySymbol}{d.value.toFixed(2)}</span>
             </div>
             <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-              <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6, delay: 0.1 }} className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${GRADIENT_COLORS[d.color]?.from ?? "#888"}, ${GRADIENT_COLORS[d.color]?.to ?? "#666"})` }} />
+              <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6, delay: 0.1 }} className="h-full rounded-full" style={{ background: gradientCss(d.color) }} />
             </div>
           </button>
         );
@@ -221,6 +219,7 @@ const SpendingChart = ({ expenses, customCategories, dateRange }: SpendingChartP
         categoryId={selectedCategory || ""}
         expenses={expenses}
         customCategories={customCategories}
+        mainCurrency={mainCurrency}
       />
     </>
   );
