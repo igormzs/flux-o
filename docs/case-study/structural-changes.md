@@ -93,4 +93,93 @@ flowchart LR
 
 ---
 
+## Phase 0: Foundations
+
+Full write-up: [00-foundations.md](00-foundations.md).
+
+### Data model (after Phase 0)
+
+```mermaid
+erDiagram
+    auth_users ||--o| profiles : "1:1"
+    auth_users ||--o{ expenses : owns
+    auth_users ||--o{ custom_categories : owns
+
+    profiles {
+        uuid id PK
+        text first_name
+        text last_name
+        text username
+        text avatar_url
+        text currency "NEW · main currency"
+        numeric budget_goal "NEW"
+        smallint billing_cycle_day "NEW · 1–31"
+        text default_scope "NEW · cycle|month|week|last30|all"
+        smallint week_starts_on "NEW"
+        jsonb notifications "NEW"
+        timestamptz settings_migrated_at "NEW · one-time import guard"
+    }
+    expenses {
+        uuid id PK
+        text title
+        numeric amount
+        text currency "NEW · null = main currency"
+        text note "no more [XXX] prefix"
+        timestamptz date
+    }
+```
+
+### Data flow (after Phase 0)
+
+```mermaid
+flowchart LR
+    subgraph Browser
+      RQ[(react-query cache)]
+      Home[Home] & Ins[Insights] & Prof[Profile] & Sheet[AddExpenseSheet] --> Hooks
+      Hooks["useSettings · useProfile<br/>useExpenses(range) · useRecentExpenses<br/>useCustomCategories · mutations"]
+      Hooks <--> RQ
+      LS[(localStorage<br/>v1 settings)] -. "read once, then cleared" .-> Hooks
+    end
+    RQ <--> SB[(Supabase<br/>profiles · expenses · custom_categories)]
+```
+
+- **One source per kind of data:** settings come from the profile row via `useSettings()`; expenses are always fetched by range with `useExpenses(range)`, which never loads "all rows".
+- **Writes go through mutations** that invalidate `["expenses"]` or `["custom_categories"]`, so every screen that shows the data refreshes.
+- **Components don't touch localStorage.** The only storage left is the theme (per device, on purpose) and the one-time v1 import.
+
+### Date-range logic (after Phase 0)
+
+| | v1 | v2 |
+|---|---|---|
+| Functions | 6, with different end-date conventions | `getScopeRange`, `getPreviousRange`, `getCycleRange`, `getCycleWeek` |
+| Range convention | Mixed (end at 00:00, 23:59 or "day before") | Half-open `[start, end)` everywhere; queries use `gte`/`lt` |
+| Cycle day | Setting on Home chart, hard-coded 25 elsewhere | Setting everywhere; days 29–31 snap to month end |
+| The Aug 25 example | Counted in August **and** September | Counted in September only (regression test) |
+
+### Category styling (after Phase 0)
+
+```mermaid
+flowchart LR
+    subgraph v1
+      A1[index.css tokens] ~~~ A2[Insights GRADIENT_COLORS] ~~~ A3[SpendingChart GRADIENT_COLORS] ~~~ A4[AddExpenseSheet colorBgMap + selectedMap] ~~~ A5[TransactionCard colorMap] ~~~ A6[ExpenseDetailSheet colorMap]
+    end
+    subgraph v2
+      R["resolveCategory(id) → { label, icon, color: hex }"] --> S["categoryStyle(hex) → --cat"]
+      S --> C[".cat-soft · .cat-tile · .cat-solid<br/>(light mode via OKLCH)"]
+      R --> G["gradientStops(hex) → charts"]
+    end
+```
+
+v1 color tokens (`"mint"`, `"coral"`…) are still accepted and map to their exact v1 hex values, so existing custom categories keep their colors without a data migration.
+
+### Tests
+
+| | v1 | Phase 0 |
+|---|---|---|
+| Test files | 1 (placeholder) | 2 |
+| Tests | 1 (`expect(true)`) | 31 |
+| Covered | — | date ranges, cycle edge cases, double-count regression, category resolution, currency split, settings mapping & v1 import |
+
+---
+
 <!-- Phase "after" sections are appended below. -->

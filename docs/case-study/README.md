@@ -52,7 +52,7 @@ To recapture:
 npm run screenshots -- --out docs/case-study/screenshots/v2/<phase>
 # v1 (from a worktree of the tag)
 git worktree add ../flux-o-v1 v1.0.0 && ln -s "$PWD/node_modules" ../flux-o-v1/node_modules
-npm run screenshots -- --app-dir ../flux-o-v1 --out docs/case-study/screenshots/v1
+npm run screenshots -- --app-dir ../flux-o-v1 --schema v1 --out docs/case-study/screenshots/v1
 ```
 
 ## v1 vs v2 at a glance
@@ -67,8 +67,9 @@ npm run screenshots -- --app-dir ../flux-o-v1 --out docs/case-study/screenshots/
 | Insights scopes | Salary cycle (25th, hard-coded) or a custom range | — |
 | Moved-payday handling | ✗ | — |
 | Logging a weekend of expenses (10 items) | 10 × full form | — |
-| Settings sync across devices | ✗ (browser only) | — |
-| Multi-currency totals | Summed as if all the same currency | — |
-| Places that define category colors | 6 files | — |
-| Places that read settings | 8 files (localStorage) | — |
-| Automated tests | 1 placeholder | — |
+| Settings sync across devices | ✗ (browser only) | ✓ (Phase 0) |
+| Multi-currency totals | Summed as if all the same currency | Main currency only; others listed separately (Phase 0) |
+| Cycle-day expenses | Counted in two cycles | Counted once (Phase 0) |
+| Places that define category colors | 6 files | 1 resolver (Phase 0) |
+| Places that read settings | 8 files (localStorage) | 1 hook (Phase 0) |
+| Automated tests | 1 placeholder | 31 after Phase 0 |

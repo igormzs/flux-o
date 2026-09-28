@@ -34,3 +34,48 @@ What the baseline shows, in the demo data:
 |---|---|
 | ![](screenshots/v1/<screen>.mobile.dark.png) | ![](screenshots/v2/<phase>/<screen>.mobile.dark.png) |
 -->
+
+## Phase 0: Foundations
+
+Phase 0 deliberately changes little on screen. Every visible difference below comes from the data being correct now. Full write-up: [00-foundations.md](00-foundations.md).
+
+### Home → Total spending: other currencies shown separately
+**Why:** v1 added a €64 train ticket to the dollar total as if it were $64.
+**Change:** the total adds up the main currency only (**$2,240.72**, v1 $2,304.72). Other currencies are listed under it as *"+ €64.00 in other currency"*. The same line appears on the Insights total.
+
+| v1 | v2 (Phase 0) |
+|---|---|
+| ![](screenshots/v1/home.mobile.dark.png) | ![](screenshots/v2/phase-0/home.mobile.dark.png) |
+
+### Home → Spending Circle label: "Aug 25 – Sep 24"
+**Why:** v1 showed "Aug 25 – Sep 25", so the next cycle's first day overlapped this one.
+**Change:** ranges are half-open internally, and the label shows the last day actually included.
+
+### Insights → comparison and breakdown
+**Why:** v1 counted the $111.66 spent on Aug 25 in both the August and September cycles, and summed euros as dollars.
+**Change:** the September vs August pulse is now **−$23.52 (−1%)** (v1 −$71.18, −3%). *Travel* leaves the breakdown because its only expense this cycle was in EUR. The "biggest increase" callout now also considers custom categories.
+
+| v1 | v2 (Phase 0) |
+|---|---|
+| ![](screenshots/v1/insights.desktop.dark.full.png) | ![](screenshots/v2/phase-0/insights.desktop.dark.full.png) |
+
+### Profile → Settings
+**Why:** the cycle day was only shown when "billing cycle" was the display period, although the Home total always uses it. Settings didn't sync between devices.
+**Change:** "Billing Cycle Start Day" is always visible, with a one-line explanation. The display-period options are *Billing cycle · Month · Week · Last 30 days · All time*. Settings save to the account.
+
+| v1 | v2 (Phase 0) |
+|---|---|
+| ![](screenshots/v1/profile.mobile.dark.full.png) | ![](screenshots/v2/phase-0/profile.mobile.dark.full.png) |
+
+### Light theme persists
+**Why:** v1 reset a saved light theme to dark on every reload.
+**Change:** the theme is applied before the first paint and kept.
+
+### Category colors: same look, new engine
+**Why:** colors were defined in six places, and Phase 1a needs any color to work.
+**Change:** no visual change intended. Tiles, chips and chart gradients all derive from one hex value per category. In light mode the tone is computed with OKLCH (same hue and saturation, darker) instead of a second hand-picked palette.
+
+| v1 light | v2 light (Phase 0) |
+|---|---|
+| ![](screenshots/v1/add-expense-filled.mobile.light.png) | ![](screenshots/v2/phase-0/add-expense-filled.mobile.light.png) |
+
