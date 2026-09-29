@@ -94,6 +94,34 @@ export async function updateExpense(id: string, expense: ExpenseInput) {
   return data as Expense;
 }
 
+/** Phase 2: many expenses in one request (one insert, all or nothing). */
+export async function saveExpenses(expenses: ExpenseInput[]) {
+  const userId = await requireUserId();
+  const { data, error } = await supabase
+    .from("expenses")
+    .insert(expenses.map((e) => ({ ...e, user_id: userId })))
+    .select("id");
+  if (error) throw error;
+  return (data ?? []).map((r) => r.id as string);
+}
+
+/** Undo for a batch save. */
+export async function deleteExpenses(ids: string[]) {
+  const { error } = await supabase.from("expenses").delete().in("id", ids);
+  if (error) throw error;
+}
+
+/** Titles and categories of recent expenses, used to guess the category of new ones. */
+export async function getExpenseHistory(limit = 1000) {
+  const { data, error } = await supabase
+    .from("expenses")
+    .select("title, category")
+    .order("date", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data as { title: string; category: string }[];
+}
+
 export async function deleteExpense(id: string) {
   const { error } = await supabase.from("expenses").delete().eq("id", id);
   if (error) throw error;

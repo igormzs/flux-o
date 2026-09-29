@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "screenshots": "node scripts/case-study/screenshots.ts",
     "smoke:categories": "node scripts/case-study/smoke-categories.ts",
-    "smoke:insights": "node scripts/case-study/smoke-insights.ts"
+    "smoke:insights": "node scripts/case-study/smoke-insights.ts",
+    "smoke:backfill": "node scripts/case-study/smoke-backfill.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

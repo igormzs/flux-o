@@ -4,6 +4,9 @@ import {
   createCustomCategory,
   deleteCategory,
   deleteExpense,
+  deleteExpenses,
+  getExpenseHistory,
+  saveExpenses,
   restoreCategory,
   saveCategoryOrder,
   updateCategory,
@@ -37,6 +40,11 @@ export const useExpenses = (range: DateRange | null) => {
     queryFn: () => getExpensesInRange(range!),
     enabled: !!range,
   });
+};
+
+/** Title → category pairs for guessing categories (Phase 2). */
+export const useExpenseHistory = () => {
+  return useQuery({ queryKey: ["expenses", "history"], queryFn: () => getExpenseHistory(), staleTime: 60_000 });
 };
 
 export const useRecentExpenses = (limit = 10) => {
@@ -117,5 +125,7 @@ export const useExpenseMutations = () => {
       onSuccess,
     }),
     remove: useMutation({ mutationFn: (id: string) => deleteExpense(id), onSuccess }),
+    saveMany: useMutation({ mutationFn: (inputs: ExpenseInput[]) => saveExpenses(inputs), onSuccess }),
+    removeMany: useMutation({ mutationFn: (ids: string[]) => deleteExpenses(ids), onSuccess }),
   };
 };

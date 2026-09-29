@@ -216,3 +216,11 @@
 [data-sonner-toaster] {
   margin-bottom: 100px !important;
 }
+
+/* Native controls (date pickers, scrollbars) follow the app theme. */
+html {
+  color-scheme: dark;
+}
+html.light {
+  color-scheme: light;
+}

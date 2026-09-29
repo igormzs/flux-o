@@ -218,6 +218,43 @@ const SCREENS: Screen[] = [
       await page.locator("[data-sonner-toast]").first().waitFor({ state: "detached", timeout: 10_000 });
     },
   },
+  // ── Phase 2: Fast backfill ──
+  {
+    name: "add-expenses-typed",
+    run: async (page) => {
+      await page.goto("/add");
+      await page.getByTestId("draft-row").first().waitFor();
+      const lines: [string, string][] = [["Brunch", "18.50"], ["Groceries", "62.30"], ["Uber home", "12.40"]];
+      for (const [i, [title, amount]] of lines.entries()) {
+        const row = page.getByTestId("draft-row").nth(i);
+        await row.getByLabel(`Title, row ${i + 1}`).fill(title);
+        await row.getByLabel(`Title, row ${i + 1}`).press("Enter");
+        if (i === 0) await row.getByLabel("Date, row 1").fill("2026-09-19");
+        await row.getByLabel(`Amount, row ${i + 1}`).fill(amount);
+        if (i < lines.length - 1) await row.getByLabel(`Amount, row ${i + 1}`).press("Enter");
+      }
+      await page.locator("body").click({ position: { x: 5, y: 5 } });
+    },
+  },
+  {
+    name: "add-expenses-paste",
+    run: async (page) => {
+      await page.goto("/add");
+      await page.getByTestId("mode-paste").click();
+      await page.locator("#paste-box").fill("Fri dinner with Ana 45\nSat groceries 62,30\nSat Uber home 12.40\n19/09 Farmers market 59.50\nSun coffee € 3.50");
+    },
+  },
+  {
+    name: "add-expenses-review",
+    full: true,
+    run: async (page) => {
+      await page.goto("/add");
+      await page.getByTestId("mode-paste").click();
+      await page.locator("#paste-box").fill("Fri dinner with Ana 45\nSat groceries 62,30\nSat Uber home 12.40\n19/09 Farmers market 59.50\nSun coffee € 3.50");
+      await page.getByTestId("read-text").click();
+      await page.getByTestId("read-summary").waitFor();
+    },
+  },
   {
     name: "profile",
     full: true,

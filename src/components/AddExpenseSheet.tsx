@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Camera, CalendarBlank, SlidersHorizontal } from "@phosphor-icons/react";
+import { X, Plus, Camera, CalendarBlank, SlidersHorizontal, Stack } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { uploadExpenseImage, Expense } from "@/lib/expenses";
 import { allCategories, categoryStyle, resolveCategory } from "@/lib/categories";
@@ -155,6 +155,16 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
               <h2 className="font-display font-bold text-xl text-foreground">
                 {expense ? "Edit Expense" : "Add Expense"}
               </h2>
+              {!expense && (
+                <button
+                  type="button"
+                  data-testid="add-several"
+                  onClick={() => { onClose(); navigate("/add"); }}
+                  className="ml-auto mr-2 h-8 px-3 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center gap-1.5 hover:bg-primary/20"
+                >
+                  <Stack size={14} weight="bold" /> Add several
+                </button>
+              )}
               <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                 <X size={16} weight="bold" />
               </button>

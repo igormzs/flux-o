@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +11,8 @@ import Index from "./pages/Index";
 import Insights from "./pages/Insights";
 import Profile from "./pages/Profile";
 import Categories from "./pages/Categories";
+// The bulk-add screen (and its parser) loads on demand; most visits never open it.
+const AddExpenses = lazy(() => import("./pages/AddExpenses"));
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -61,6 +64,7 @@ const AppRoutes = () => {
           <Route path="/insights" element={<ProtectedRoute><Insights /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
+          <Route path="/add" element={<ProtectedRoute><Suspense fallback={null}><AddExpenses /></Suspense></ProtectedRoute>} />
           <Route path="/settings" element={<Navigate to="/profile" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
