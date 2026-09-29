@@ -7,6 +7,18 @@ The story behind each change, with before/after screenshots, is in [docs/case-st
 
 ## [Unreleased]
 
+### Fixed — Polish after testing
+- Tapping a text field on iPhone no longer zooms the page (iOS Safari zooms into any field under 16px). Fields are 16px on phones and keep their compact size from tablet width up.
+- Switching between light and dark is one cross-fade of the whole page. Before, every element faded its own colors at slightly different speeds, and on iOS the text on the Home card briefly showed boxes of the old theme.
+- "Clear all expense data" deletes the user's expenses and receipt photos after a confirmation. In v1 it only showed a "Data cleared" message.
+- `npm run smoke:fixes`: 22 checks in WebKit (Safari's engine).
+
+### Security
+- Receipts and avatars are private. They're shown through signed links that work for an hour, only for their owner. New uploads store the file's path, and v1's stored URLs keep working. Migration `20261001090000_private_images.sql`.
+
+### Removed
+- `bun.lock` and `bun.lockb`, left over from the project template. The project uses npm, and `package-lock.json` is the only lockfile.
+
 ### Added — Phase 2: Fast backfill
 - An Add expenses screen (`/add`, via "Add several" in the Add Expense sheet) for many expenses at once.
 - Typing rows: Enter moves to the amount, then to a new row that keeps the date and category.

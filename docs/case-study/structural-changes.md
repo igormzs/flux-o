@@ -335,3 +335,43 @@ flowchart LR
 |---|---|---|
 | Unit tests | 62 | 106 |
 | Browser checks | 44 | 67 (categories 22 · insights 22 · backfill 23) |
+
+## Polish after testing
+
+Issues found while using v2 on a phone, fixed before tagging v2.0.0.
+
+### Images: public → private
+
+```mermaid
+flowchart LR
+    V["stored value<br/>v1 public URL or path"] --> P["storagePath()"]
+    P --> S["createSignedUrl<br/>(1 hour, owner only)"]
+    S --> C["react-query cache<br/>(55 minutes)"]
+    C --> I["StoredImage"]
+```
+
+| | v1 → Phase 2 | Now |
+|---|---|---|
+| Bucket | Public: any file URL opens without signing in | Private (`20261001090000_private_images.sql`) |
+| Stored in `image_url` / `avatar_url` | Full public URL | The file's path. Old URLs are still read |
+| Shown with | `<img src={url}>` | `StoredImage`, a signed link for the owner |
+| Order of deploy | — | App first (signed links also work on a public bucket), then the migration |
+
+### Clear all expense data
+
+`clearExpenseData()` deletes the user's `expenses` rows (row-level security limits it to theirs) and every file in their storage folder except the avatar. Custom categories, settings and the profile stay.
+
+### Theme switch
+
+A global rule fades every element's background (0.3 s) and text (0.15 s) separately. On iOS this left boxes of the old theme behind text on the blurred Home card. `ThemeToggle` now turns transitions off for the one frame of the switch and, where the View Transitions API exists (Safari 18+, Chrome), cross-fades the whole page as one image.
+
+### Lockfiles
+
+`bun.lock` and `bun.lockb` came with the template. Vercel prefers bun when it finds them, so production installs weren't using the same lockfile as local development. Only `package-lock.json` remains.
+
+### Tests
+
+| | Phase 2 | Polish |
+|---|---|---|
+| Unit tests | 106 | 109 |
+| Browser checks | 67 | 89 (+ fixes 22, in WebKit) |
