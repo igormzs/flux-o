@@ -133,3 +133,42 @@ Answers the top piece of v1 feedback, *"Categories feel very limiting."* Full wr
 | Phase 0 light | Phase 1a light |
 |---|---|
 | ![](screenshots/v2/phase-0/add-expense-filled.mobile.light.png) | ![](screenshots/v2/phase-1a/add-expense-filled.mobile.light.png) |
+
+## Phase 1b: Insights scope & comparisons
+
+Answers *"My cycle is 25th to 25th, but payday moves."* Full write-up: [01b-insights-scope.md](01b-insights-scope.md).
+
+### Insights: choose the kind of period, compare it fairly
+**Why:** v1 had one kind of period (the salary cycle, as this year's month chips) and compared an unfinished cycle with a whole finished one, so September looked −3% cheaper on day 27.
+**Change:**
+- Tabs for Cycle · Month · Week · Year · Custom, and chips for the last 12 periods of that kind.
+- A header with the dates and "Day 27 of 31".
+- The comparison is cut at the same point: **+$125.12 (+6%)** vs "last cycle by this point: $2,115.60".
+- A "Last 6 cycles" chart with the average as a dashed line.
+- A % change next to each category.
+
+| v1 | Phase 0 | Phase 1b |
+|---|---|---|
+| ![](screenshots/v1/insights.mobile.dark.full.png) | ![](screenshots/v2/phase-0/insights.mobile.dark.full.png) | ![](screenshots/v2/phase-1b/insights.mobile.dark.full.png) |
+
+### Month, week and year views
+**Change:** each period type splits the period in the unit that fits it: by week for cycles and months, by day for a week, and by month for a year. The history chart covers 6 cycles or months, 8 weeks or 3 years. "Average" compares with up to 3 earlier periods, leaving out any with no spending.
+
+| Month (desktop) | Week vs average | Year |
+|---|---|---|
+| ![](screenshots/v2/phase-1b/insights-month.desktop.dark.full.png) | ![](screenshots/v2/phase-1b/insights-average.mobile.dark.png) | ![](screenshots/v2/phase-1b/insights-year.mobile.dark.png) |
+
+### Payday moved
+**Why:** when the salary arrives before the 25th, the days in between belonged to the wrong cycle.
+**Change:** "Payday moved?" under the period header opens a sheet. Pick the day the salary arrived (up to 10 days either side of the usual day) and choose what happens when the cycle day is on a weekend. After moving the September payday to Fri Aug 21, the header shows the new start, and the total includes Aug 21–24: **$2,369.16**. Home shows the same total.
+
+| The sheet | After the move |
+|---|---|
+| ![](screenshots/v2/phase-1b/payday-sheet.mobile.dark.png) | ![](screenshots/v2/phase-1b/payday-moved.mobile.dark.png) |
+
+### Profile: weekend rule
+**Change:** under "Billing Cycle Start Day": *When day 25 is on a weekend, start the cycle on that day / Friday before / Monday after.*
+
+| Phase 1a | Phase 1b |
+|---|---|
+| ![](screenshots/v2/phase-1a/profile.mobile.dark.full.png) | ![](screenshots/v2/phase-1b/profile.mobile.dark.full.png) |

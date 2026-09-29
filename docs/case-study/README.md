@@ -8,7 +8,7 @@ This folder records how Flux-o changed from **v1.0.0** (git tag `v1.0.0`) to **v
 | [structural-changes.md](structural-changes.md) | Architecture, data model and code-quality changes, with before/after diagrams |
 | [00-foundations.md](00-foundations.md) | Phase 0: settings sync, one date-range module, one category resolver, a currency column |
 | [01a-categories.md](01a-categories.md) | Phase 1a: Categories 2.0: edit, delete, reorder, 40 colors + custom, 209 icons |
-| 01b-insights-scope.md | Phase 1b: Insights scope & comparisons *(to be written)* |
+| [01b-insights-scope.md](01b-insights-scope.md) | Phase 1b: period types, same-point comparisons, history, moved paydays |
 | 02-fast-backfill.md | Phase 2: batch add and paste/CSV import *(to be written)* |
 | [../../CHANGELOG.md](../../CHANGELOG.md) | Release notes, one entry per phase |
 
@@ -64,12 +64,12 @@ npm run screenshots -- --app-dir ../flux-o-v1 --schema v1 --out docs/case-study/
 | Category colors | 8 fixed | 40 swatches + any custom color (Phase 1a) |
 | Category icons | 28 | 209, grouped and searchable (Phase 1a) |
 | Edit / delete / reorder categories | ✗ | ✓, including renaming or hiding defaults (Phase 1a) |
-| Insights scopes | Salary cycle (25th, hard-coded) or a custom range | — |
-| Moved-payday handling | ✗ | — |
+| Insights scopes | Salary cycle (25th, hard-coded) or a custom range | Cycle · Month · Week · Year · Custom, compared at the same point with the previous period or the average (Phase 1b) |
+| Moved-payday handling | ✗ | Weekend rule + one-off "Payday moved?" (Phase 1b) |
 | Logging a weekend of expenses (10 items) | 10 × full form | — |
 | Settings sync across devices | ✗ (browser only) | ✓ (Phase 0) |
 | Multi-currency totals | Summed as if all the same currency | Main currency only; others listed separately (Phase 0) |
 | Cycle-day expenses | Counted in two cycles | Counted once (Phase 0) |
 | Places that define category colors | 6 files | 1 resolver (Phase 0) |
 | Places that read settings | 8 files (localStorage) | 1 hook (Phase 0) |
-| Automated tests | 1 placeholder | 41 unit + 22 end-to-end checks after Phase 1a |
+| Automated tests | 1 placeholder | 62 unit + 44 end-to-end checks after Phase 1b |

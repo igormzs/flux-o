@@ -7,6 +7,19 @@ The story behind each change, with before/after screenshots, is in [docs/case-st
 
 ## [Unreleased]
 
+### Added — Phase 1b: Insights scope & comparisons
+- Insights period types: Cycle, Month, Week, Year and Custom, with chips for the last 12 periods of each.
+- Comparisons with the previous period or the average of the last 3. A period still in progress is compared at the same point, not with a whole finished period.
+- A history chart of the last 6 cycles or months, 8 weeks or 3 years with their average. Tap a bar to open that period.
+- Per-category % change, "Day X of Y", and by day / by week / by month breakdowns.
+- "Payday moved?": start one cycle on the day the salary actually arrived (up to 10 days either side).
+- A weekend rule (Profile): when the cycle day is on a weekend, start on that day, the Friday before or the Monday after. Home and Insights both follow it.
+- The Insights period is in the URL, so Back and bookmarks work.
+- `npm run smoke:insights`: 22 browser checks.
+
+### Removed — Phase 1b
+- `MonthPicker` (replaced by the period tabs and chips).
+
 ### Added — Phase 1a: Categories 2.0
 - A Categories screen (Profile → Categories): edit, reorder (drag or arrow keys), hide and restore categories.
 - A category editor with a live preview, 40 swatches plus any custom color (picker or hex), and 209 icons grouped and searchable.
@@ -47,7 +60,7 @@ The story behind each change, with before/after screenshots, is in [docs/case-st
 - The unused `storage.ts` (the v1 prototype's localStorage data model) and `constants.ts`.
 
 ### Migrations
-- `20260928120000_settings_on_profiles.sql`, `20260928120100_expense_currency_column.sql`, `20260929090000_default_currency_eur.sql`, `20260929100000_security_advisor_fixes.sql`, `20260929120000_categories_2.sql`. Apply them before deploying.
+- `20260928120000_settings_on_profiles.sql`, `20260928120100_expense_currency_column.sql`, `20260929090000_default_currency_eur.sql`, `20260929100000_security_advisor_fixes.sql`, `20260929120000_categories_2.sql`, `20260930090000_payday_rules.sql`. Apply them before deploying.
 
 ## [1.0.0] - 2026-09-28
 

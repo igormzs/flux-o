@@ -251,3 +251,51 @@ flowchart LR
 |---|---|---|
 | Unit tests | 31 | 41 |
 | End-to-end | scripted once | `npm run smoke:categories`, 22 checks, committed |
+
+## Phase 1b: Insights scope & comparisons
+
+Full write-up: [01b-insights-scope.md](01b-insights-scope.md).
+
+### When does a cycle start?
+
+```mermaid
+flowchart LR
+    N["usual start<br/>day 25 of the month<br/>(snapped to month end)"] --> O{"one-off override<br/>for this month?<br/>(≤ 10 days away)"}
+    O -- yes --> S["that date"]
+    O -- no --> W{"weekend rule<br/>and day 25 is Sat/Sun?"}
+    W -- before --> F["Friday before"]
+    W -- after --> M["Monday after"]
+    W -- none / weekday --> U["usual start"]
+```
+
+`cycleStart(year, month, cycleDay, payday)` answers this for one month. `getCycleRange()` then walks from the anchor's month to the cycle whose `[start, next start)` contains it, because a moved start can fall in the previous or next month. A cycle always ends where the next one starts, so moving a payday resizes two neighbouring cycles and nothing else. A test checks 18 consecutive cycles for gaps and overlaps.
+
+### Data model (after Phase 1b)
+
+```mermaid
+erDiagram
+    profiles {
+        smallint billing_cycle_day "Phase 0"
+        text payday_weekend_rule "NEW · none | before | after"
+        jsonb cycle_start_overrides "NEW · { '2026-08': '2026-08-21' }"
+    }
+```
+
+### Comparing periods
+
+| Step | Function |
+|---|---|
+| The selected period plus the N before it (oldest first) | `getRecentRanges(range, scope, opts, N)` |
+| Cut earlier periods at the point the current one has reached | `samePointIn(range, current, now)` |
+| Total vs previous / vs average of ≤3 (leaving out empty periods) | `comparePeriods(expenses, ranges, now, mode)` |
+| The same comparison per category | `categoryComparison(expenses, range, baselineRanges)` |
+| Chart bars + average of finished periods | `history(expenses, ranges, now)` |
+
+All of these are pure functions in `lib/insights.ts` and `lib/date-utils.ts`. The page only fetches one date range (`ranges[0].start → range.end`) and renders.
+
+### Tests
+
+| | Phase 1a | Phase 1b |
+|---|---|---|
+| Unit tests | 41 | 62 |
+| Browser checks | 22 (categories) | 22 (categories) + 22 (insights) |
