@@ -16,27 +16,36 @@ export type Database = {
     Tables: {
       custom_categories: {
         Row: {
+          builtin_key: string | null
           color: string
           created_at: string
+          hidden_at: string | null
           icon: string
           id: string
           label: string
+          sort_order: number | null
           user_id: string
         }
         Insert: {
+          builtin_key?: string | null
           color?: string
           created_at?: string
+          hidden_at?: string | null
           icon?: string
           id?: string
           label: string
+          sort_order?: number | null
           user_id: string
         }
         Update: {
+          builtin_key?: string | null
           color?: string
           created_at?: string
+          hidden_at?: string | null
           icon?: string
           id?: string
           label?: string
+          sort_order?: number | null
           user_id?: string
         }
         Relationships: []
@@ -150,7 +159,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_category: {
+        Args: { p_category: string; p_move_to?: string | null }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
