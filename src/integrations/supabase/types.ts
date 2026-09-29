@@ -115,6 +115,8 @@ export type Database = {
           id: string
           last_name: string | null
           notifications: Json
+          payday_weekend_rule: string
+          cycle_start_overrides: Json
           settings_migrated_at: string | null
           updated_at: string
           username: string | null
@@ -131,6 +133,8 @@ export type Database = {
           id: string
           last_name?: string | null
           notifications?: Json
+          payday_weekend_rule?: string
+          cycle_start_overrides?: Json
           settings_migrated_at?: string | null
           updated_at?: string
           username?: string | null
@@ -147,6 +151,8 @@ export type Database = {
           id?: string
           last_name?: string | null
           notifications?: Json
+          payday_weekend_rule?: string
+          cycle_start_overrides?: Json
           settings_migrated_at?: string | null
           updated_at?: string
           username?: string | null
