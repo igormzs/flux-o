@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "screenshots": "node scripts/case-study/screenshots.ts",
-    "smoke:categories": "node scripts/case-study/smoke-categories.ts"
+    "smoke:categories": "node scripts/case-study/smoke-categories.ts",
+    "smoke:insights": "node scripts/case-study/smoke-insights.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

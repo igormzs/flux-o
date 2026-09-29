@@ -171,6 +171,53 @@ const SCREENS: Screen[] = [
       await page.getByText("Category breakdown", { exact: false }).waitFor();
     },
   },
+  // ── Phase 1b: Insights scope & comparisons (v1 has no such options) ──
+  {
+    name: "insights-month",
+    full: true,
+    run: async (page) => {
+      await page.goto("/insights?scope=month");
+      await page.getByTestId("history-chart").waitFor();
+    },
+  },
+  {
+    name: "insights-average",
+    run: async (page) => {
+      await page.goto("/insights?scope=week");
+      await page.getByTestId("history-chart").waitFor();
+      await page.getByTestId("baseline-average").click();
+    },
+  },
+  {
+    name: "insights-year",
+    run: async (page) => {
+      await page.goto("/insights?scope=year");
+      await page.getByTestId("history-chart").waitFor();
+    },
+  },
+  {
+    name: "payday-sheet",
+    run: async (page) => {
+      await page.goto("/insights?scope=cycle");
+      await page.getByTestId("payday-moved").click();
+      await settle(page, 500);
+      await page.locator("#payday-date").fill("2026-08-21");
+    },
+  },
+  {
+    name: "payday-moved",
+    full: true,
+    run: async (page) => {
+      // The September payday (Aug 25) arrived early, on Fri Aug 21.
+      await page.goto("/insights?scope=cycle");
+      await page.getByTestId("payday-moved").click();
+      await settle(page, 500);
+      await page.locator("#payday-date").fill("2026-08-21");
+      await page.getByRole("button", { name: "Save" }).click();
+      await page.getByText(/Started .* payday moved/).waitFor();
+      await page.locator("[data-sonner-toast]").first().waitFor({ state: "detached", timeout: 10_000 });
+    },
+  },
   {
     name: "profile",
     full: true,

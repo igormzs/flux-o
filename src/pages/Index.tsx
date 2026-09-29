@@ -10,6 +10,7 @@ import AddExpenseSheet from "@/components/AddExpenseSheet";
 import ExpenseDetailSheet from "@/components/ExpenseDetailSheet";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { scopeOptionsFor } from "@/lib/settings";
 import { getCycleRange, getCycleWeek, getCycleWeekIndex, getPreviousRange, getScopeRange, lastDayOf } from "@/lib/date-utils";
 import { format } from "date-fns";
 import { useCustomCategories, useExpenseMutations, useExpenses, useRecentExpenses } from "@/hooks/useExpenses";
@@ -32,7 +33,7 @@ const Dashboard = () => {
   const displayName = displayNameOf(profile, user?.email);
   const initials = initialsOf(profile, user?.email);
   const mainCurrency = settings.currency;
-  const scopeOptions = { cycleDay: settings.cycleDay, weekStartsOn: settings.weekStartsOn };
+  const scopeOptions = scopeOptionsFor(settings);
 
   const handleEditClick = (expense: Expense) => {
     setExpenseToEdit(expense);
@@ -46,7 +47,7 @@ const Dashboard = () => {
 
   // Current cycle and the matching week of the previous cycle (weekly pulse).
   const now = new Date();
-  const cycle = getCycleRange(now, settings.cycleDay);
+  const cycle = getCycleRange(now, settings.cycleDay, scopeOptions.payday);
   const weekIndex = getCycleWeekIndex(cycle, now);
   const currentWeek = getCycleWeek(cycle, weekIndex);
   const prevWeek = getCycleWeek(getPreviousRange(cycle, "cycle", scopeOptions)!, weekIndex);

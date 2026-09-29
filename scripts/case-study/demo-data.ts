@@ -142,6 +142,8 @@ export function applyV2Migrations(data: Record<string, Row[]>): Record<string, R
       settings_migrated_at: null,
     });
   }
+  // 20260930090000_payday_rules.sql: no weekend rule, no moved paydays.
+  for (const p of data.profiles) Object.assign(p, { payday_weekend_rule: "none", cycle_start_overrides: {} });
   // 20260929120000_categories_2.sql: new category columns start empty.
   for (const c of data.custom_categories) Object.assign(c, { builtin_key: null, sort_order: null, hidden_at: null });
   // 20260928120100_expense_currency_column.sql: move "[XXX] " into a column.

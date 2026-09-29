@@ -1,11 +1,13 @@
 import type { Database, Json } from "@/integrations/supabase/types";
-import { DEFAULT_CYCLE_DAY, DEFAULT_WEEK_STARTS_ON, type Scope } from "./date-utils";
+import { DEFAULT_CYCLE_DAY, DEFAULT_WEEK_STARTS_ON, type PaydayOptions, type Scope, type ScopeOptions } from "./date-utils";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
-/** Scopes that can be a default view (custom needs dates, so it can't). */
-export type DefaultScope = Exclude<Scope, "custom">;
+/** Scopes that can be a default view (custom needs dates; year is Insights-only). */
+export type DefaultScope = Exclude<Scope, "custom" | "year">;
+
+export type WeekendRule = NonNullable<PaydayOptions["weekendRule"]>;
 
 export interface NotificationSettings {
   overBudget: boolean;
@@ -24,6 +26,10 @@ export interface Settings {
   defaultScope: DefaultScope;
   weekStartsOn: 0 | 1;
   notifications: NotificationSettings;
+  /** What happens when the cycle day falls on a weekend (Phase 1b). */
+  weekendRule: WeekendRule;
+  /** One-off cycle starts, keyed by the usual start's month ("2026-09"). */
+  cycleOverrides: Record<string, string>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -33,7 +39,18 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultScope: "cycle",
   weekStartsOn: DEFAULT_WEEK_STARTS_ON,
   notifications: { overBudget: true, weeklyReport: false, dailyReminder: false },
+  weekendRule: "none",
+  cycleOverrides: {},
 };
+
+/** The date options every screen passes to date-utils, so cycles agree everywhere. */
+export function scopeOptionsFor(settings: Settings): ScopeOptions {
+  return {
+    cycleDay: settings.cycleDay,
+    weekStartsOn: settings.weekStartsOn,
+    payday: { weekendRule: settings.weekendRule, overrides: settings.cycleOverrides },
+  };
+}
 
 export function settingsFromProfile(row: Partial<ProfileRow> | null | undefined): Settings {
   if (!row) return DEFAULT_SETTINGS;
@@ -44,6 +61,8 @@ export function settingsFromProfile(row: Partial<ProfileRow> | null | undefined)
     defaultScope: (row.default_scope as DefaultScope) ?? DEFAULT_SETTINGS.defaultScope,
     weekStartsOn: row.week_starts_on === 0 ? 0 : 1,
     notifications: { ...DEFAULT_SETTINGS.notifications, ...(row.notifications as Partial<NotificationSettings> | null) },
+    weekendRule: (row.payday_weekend_rule as WeekendRule) ?? DEFAULT_SETTINGS.weekendRule,
+    cycleOverrides: { ...(row.cycle_start_overrides as Record<string, string> | null) },
   };
 }
 
@@ -55,6 +74,8 @@ export function settingsToProfile(patch: Partial<Settings>): ProfileUpdate {
   if (patch.defaultScope !== undefined) out.default_scope = patch.defaultScope;
   if (patch.weekStartsOn !== undefined) out.week_starts_on = patch.weekStartsOn;
   if (patch.notifications !== undefined) out.notifications = patch.notifications as unknown as Json;
+  if (patch.weekendRule !== undefined) out.payday_weekend_rule = patch.weekendRule;
+  if (patch.cycleOverrides !== undefined) out.cycle_start_overrides = patch.cycleOverrides as unknown as Json;
   return out;
 }
 

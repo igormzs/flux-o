@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { CURRENCIES } from "@/lib/currencies";
 import { useProfile, useSettings, useUpdateProfile, useUpdateSettings } from "@/hooks/useProfile";
-import type { DefaultScope, Settings } from "@/lib/settings";
+import type { DefaultScope, Settings, WeekendRule } from "@/lib/settings";
 import { useCustomCategories } from "@/hooks/useExpenses";
 import { allCategories, categoryStyle } from "@/lib/categories";
 import CategoryIcon from "@/components/CategoryIcon";
@@ -22,6 +22,12 @@ const SCOPE_LABELS: Record<DefaultScope, string> = {
   last30: "Last 30 days",
   all: "All time",
 };
+
+const WEEKEND_RULE_LABELS: [WeekendRule, string][] = [
+  ["none", "On that day"],
+  ["before", "Friday before"],
+  ["after", "Monday after"],
+];
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -227,6 +233,27 @@ const Profile = () => {
             />
             <p className="text-[11px] text-muted-foreground mt-1.5">
               Your cycle runs from day {pendingSettings.cycleDay} to the day before it next month. Days past a month's end use its last day.
+            </p>
+          </div>
+
+          {/* Payday on a weekend (Phase 1b) */}
+          <div>
+            <label className="text-xs text-muted-foreground block mb-2">When day {pendingSettings.cycleDay} is on a weekend, start the cycle</label>
+            <div role="radiogroup" aria-label="Weekend rule" className="grid grid-cols-3 gap-2">
+              {WEEKEND_RULE_LABELS.map(([rule, text]) => (
+                <button
+                  key={rule}
+                  role="radio"
+                  aria-checked={pendingSettings.weekendRule === rule}
+                  onClick={() => updatePendingSetting({ weekendRule: rule })}
+                  className={`rounded-xl px-2 py-2.5 text-xs font-medium transition-all border ${pendingSettings.weekendRule === rule ? "bg-primary/20 text-primary border-primary/30" : "bg-muted text-muted-foreground hover:bg-muted/80 border-transparent"}`}
+                >
+                  {text}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1.5">
+              For a one-off change, open the cycle in Insights and tap “Payday moved?”.
             </p>
           </div>
 
