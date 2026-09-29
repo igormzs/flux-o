@@ -21,6 +21,8 @@ The story behind each change, with before/after screenshots, is in [docs/case-st
 - Profile: the billing-cycle day is always visible. Display-period options are Billing cycle, Month, Week, Last 30 days and All time.
 
 ### Fixed
+- Anyone with the app's public key could list every file in the receipt-image bucket. Listing is now limited to your own files.
+- The sign-up trigger function could be called directly through the API.
 - Expenses on the cycle start day were counted in two cycles.
 - Amounts in different currencies were added together.
 - A custom Insights date range left out its last day.
@@ -31,7 +33,7 @@ The story behind each change, with before/after screenshots, is in [docs/case-st
 - The unused `storage.ts` (the v1 prototype's localStorage data model) and `constants.ts`.
 
 ### Migrations
-- `20260928120000_settings_on_profiles.sql`, `20260928120100_expense_currency_column.sql`, `20260929090000_default_currency_eur.sql`. Apply them before deploying.
+- `20260928120000_settings_on_profiles.sql`, `20260928120100_expense_currency_column.sql`, `20260929090000_default_currency_eur.sql`, `20260929100000_security_advisor_fixes.sql`. Apply them before deploying.
 
 ## [1.0.0] - 2026-09-28
 
