@@ -299,3 +299,39 @@ All of these are pure functions in `lib/insights.ts` and `lib/date-utils.ts`. Th
 |---|---|---|
 | Unit tests | 41 | 62 |
 | Browser checks | 22 (categories) | 22 (categories) + 22 (insights) |
+
+## Phase 2: Fast backfill
+
+Full write-up: [02-fast-backfill.md](02-fast-backfill.md).
+
+### From text to saved expenses
+
+```mermaid
+flowchart LR
+    T["pasted text<br/>or CSV file"] --> D{"same delimiter<br/>on every line?"}
+    D -- yes --> PT["parseTable<br/>header or value-based columns<br/>income skipped"]
+    D -- no --> PL["parseLines<br/>date first · amount last"]
+    PT & PL --> G["guessCategory<br/>history → name → keyword"]
+    G --> M["markDuplicates<br/>vs saved expenses on those days<br/>and within the batch"]
+    M --> R["review rows<br/>(edit · untick · fix)"]
+    R -- "Save" --> I["one insert<br/>(saveExpenses)"]
+    I -- "Undo" --> X["deleteExpenses(ids)"]
+```
+
+- **Everything before "review" is pure** (`lib/import.ts`) and covered by 44 unit tests.
+- **No schema change:** a draft becomes a normal `expenses` row (noon on its day, with an explicit `currency`).
+- **The history for guesses** is one small query (`title, category`, the last 1,000 expenses), cached for a minute.
+
+### Bundle
+
+| | Phase 1b | Phase 2 |
+|---|---|---|
+| Main JS (gzip) | 406 KB | 407 KB |
+| Add expenses screen + parser (gzip, on demand) | — | 14 KB |
+
+### Tests
+
+| | Phase 1b | Phase 2 |
+|---|---|---|
+| Unit tests | 62 | 106 |
+| Browser checks | 44 | 67 (categories 22 · insights 22 · backfill 23) |

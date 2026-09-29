@@ -7,6 +7,18 @@ The story behind each change, with before/after screenshots, is in [docs/case-st
 
 ## [Unreleased]
 
+### Added — Phase 2: Fast backfill
+- An Add expenses screen (`/add`, via "Add several" in the Add Expense sheet) for many expenses at once.
+- Typing rows: Enter moves to the amount, then to a new row that keeps the date and category.
+- Pasting notes ("Sat groceries 62,30"), bank statements or spreadsheets, or choosing a CSV file. Weekday and numeric dates, both decimal styles and currency symbols are understood, and incoming money is skipped.
+- Category guesses from past expenses with the same title, category names and keywords.
+- Duplicate detection against saved expenses and within the batch (unticked, with the reason).
+- One-request save with Undo. Unsaved rows are kept for the browser tab.
+- `npm run smoke:backfill`: 23 browser checks.
+
+### Changed — Phase 2
+- Native controls such as date pickers follow the app's dark or light theme.
+
 ### Added — Phase 1b: Insights scope & comparisons
 - Insights period types: Cycle, Month, Week, Year and Custom, with chips for the last 12 periods of each.
 - Comparisons with the previous period or the average of the last 3. A period still in progress is compared at the same point, not with a whole finished period.

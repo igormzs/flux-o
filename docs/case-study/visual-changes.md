@@ -172,3 +172,32 @@ Answers *"My cycle is 25th to 25th, but payday moves."* Full write-up: [01b-insi
 | Phase 1a | Phase 1b |
 |---|---|
 | ![](screenshots/v2/phase-1a/profile.mobile.dark.full.png) | ![](screenshots/v2/phase-1b/profile.mobile.dark.full.png) |
+
+## Phase 2: Fast backfill
+
+Answers *"Catching up after a weekend is slow."* Full write-up: [02-fast-backfill.md](02-fast-backfill.md).
+
+### Add expense → "Add several"
+**Change:** the Add Expense sheet gets an **Add several** button in its header, which opens the new screen.
+
+| v1 | Phase 2 |
+|---|---|
+| ![](screenshots/v1/add-expense-empty.mobile.dark.png) | ![](screenshots/v2/phase-2/add-expense-empty.mobile.dark.png) |
+
+### New: Add expenses, by typing
+**Why:** in v1 each expense needed the full form.
+**Change:** a list of compact rows. Title → Enter → amount → Enter starts the next row with the same date and category. The category is guessed from the title (Brunch → Food, Groceries → Grocery, Uber → Travel), and the Save button shows the count and total.
+
+| Typing three rows |
+|---|
+| ![](screenshots/v2/phase-2/add-expenses-typed.mobile.dark.png) |
+
+### New: paste a note, a statement or a CSV
+**Change:** paste one expense per line (`Sat groceries 62,30`) or a table, or choose a CSV file. After reading, a summary says what was found and skipped. Each row explains its category ("from your past expenses", "from the title"), and a line that's already saved is unticked with the reason ("Looks like 'Farmers market' on Sep 19").
+
+| The paste box | After reading (desktop) |
+|---|---|
+| ![](screenshots/v2/phase-2/add-expenses-paste.mobile.dark.png) | ![](screenshots/v2/phase-2/add-expenses-review.desktop.dark.full.png) |
+
+### Dark mode: native date pickers
+**Change:** date inputs and other native controls now follow the app theme (they were always light).

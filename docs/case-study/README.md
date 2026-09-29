@@ -9,7 +9,7 @@ This folder records how Flux-o changed from **v1.0.0** (git tag `v1.0.0`) to **v
 | [00-foundations.md](00-foundations.md) | Phase 0: settings sync, one date-range module, one category resolver, a currency column |
 | [01a-categories.md](01a-categories.md) | Phase 1a: Categories 2.0: edit, delete, reorder, 40 colors + custom, 209 icons |
 | [01b-insights-scope.md](01b-insights-scope.md) | Phase 1b: period types, same-point comparisons, history, moved paydays |
-| 02-fast-backfill.md | Phase 2: batch add and paste/CSV import *(to be written)* |
+| [02-fast-backfill.md](02-fast-backfill.md) | Phase 2: add several at once, paste notes/statements/CSV, category guesses, duplicates |
 | [../../CHANGELOG.md](../../CHANGELOG.md) | Release notes, one entry per phase |
 
 ## Where v2 started
@@ -66,10 +66,10 @@ npm run screenshots -- --app-dir ../flux-o-v1 --schema v1 --out docs/case-study/
 | Edit / delete / reorder categories | ✗ | ✓, including renaming or hiding defaults (Phase 1a) |
 | Insights scopes | Salary cycle (25th, hard-coded) or a custom range | Cycle · Month · Week · Year · Custom, compared at the same point with the previous period or the average (Phase 1b) |
 | Moved-payday handling | ✗ | Weekend rule + one-off "Payday moved?" (Phase 1b) |
-| Logging a weekend of expenses (10 items) | 10 × full form | — |
+| Logging a weekend of expenses (10 items) | 10 × full form (~60 actions) | One screen: ~25 actions typed, or 5 by pasting a note (Phase 2) |
 | Settings sync across devices | ✗ (browser only) | ✓ (Phase 0) |
 | Multi-currency totals | Summed as if all the same currency | Main currency only; others listed separately (Phase 0) |
 | Cycle-day expenses | Counted in two cycles | Counted once (Phase 0) |
 | Places that define category colors | 6 files | 1 resolver (Phase 0) |
 | Places that read settings | 8 files (localStorage) | 1 hook (Phase 0) |
-| Automated tests | 1 placeholder | 62 unit + 44 end-to-end checks after Phase 1b |
+| Automated tests | 1 placeholder | 106 unit + 67 end-to-end checks |
