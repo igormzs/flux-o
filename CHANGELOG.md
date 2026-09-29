@@ -7,6 +7,20 @@ The story behind each change, with before/after screenshots, is in [docs/case-st
 
 ## [Unreleased]
 
+### Added — Phase 1a: Categories 2.0
+- A Categories screen (Profile → Categories): edit, reorder (drag or arrow keys), hide and restore categories.
+- A category editor with a live preview, 40 swatches plus any custom color (picker or hex), and 209 icons grouped and searchable.
+- Default categories can be renamed, recolored, re-iconed and hidden.
+- Deleting a category asks where to move its expenses and does both in one database transaction.
+- Duplicate category names are rejected, ignoring case and spaces.
+- "New" and "Manage" in Add expense open the editor and the Categories screen.
+- `npm run smoke:categories`: an end-to-end check of every category flow against the mocked API.
+
+### Changed — Phase 1a
+- Text on a selected category tile is black or white, whichever is more readable. Very dark or very light custom colors are adjusted per theme so they stay readable.
+- The icon catalog loads on demand (a separate 160 KB chunk). v1's 28 icons stay in the main bundle.
+
+
 ### Added
 - Case-study tooling: a reproducible screenshot runner against a mocked Supabase API with a fixed demo dataset (`npm run screenshots`).
 - The v1 baseline screenshots and documentation in `docs/case-study/`.
@@ -33,7 +47,7 @@ The story behind each change, with before/after screenshots, is in [docs/case-st
 - The unused `storage.ts` (the v1 prototype's localStorage data model) and `constants.ts`.
 
 ### Migrations
-- `20260928120000_settings_on_profiles.sql`, `20260928120100_expense_currency_column.sql`, `20260929090000_default_currency_eur.sql`, `20260929100000_security_advisor_fixes.sql`. Apply them before deploying.
+- `20260928120000_settings_on_profiles.sql`, `20260928120100_expense_currency_column.sql`, `20260929090000_default_currency_eur.sql`, `20260929100000_security_advisor_fixes.sql`, `20260929120000_categories_2.sql`. Apply them before deploying.
 
 ## [1.0.0] - 2026-09-28
 

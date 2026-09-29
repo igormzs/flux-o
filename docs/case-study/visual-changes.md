@@ -79,3 +79,57 @@ Phase 0 deliberately changes little on screen. Every visible difference below co
 |---|---|
 | ![](screenshots/v1/add-expense-filled.mobile.light.png) | ![](screenshots/v2/phase-0/add-expense-filled.mobile.light.png) |
 
+
+## Phase 1a: Categories 2.0
+
+Answers the top piece of v1 feedback, *"Categories feel very limiting."* Full write-up: [01a-categories.md](01a-categories.md).
+
+### New: Categories screen (Profile → Categories)
+**Why:** in v1 a category couldn't be edited, deleted, renamed or moved once it was created.
+**Change:** one list of every category in the user's order. Tap a row to edit it, and drag the handle (or use the arrow keys) to reorder. Defaults are labelled; hidden defaults appear in a "Hidden" section with Restore.
+
+| v1 | v2 (Phase 1a) |
+|---|---|
+| *(no such screen: categories could only be created, in Add expense)* | ![](screenshots/v2/phase-1a/categories.mobile.dark.full.png) |
+
+### New category: from 8 colors and 28 icons to 40 + any color and 209 searchable icons
+**Why:** "Coffee" had to share Food's mint and "Gym" Subs' blue, because only 8 colors existed.
+**Change:** the inline form is replaced by an editor sheet with a live preview. It has 5 rows × 8 hues of swatches (v1's palette is the first row), a custom color picker with a hex field, and icons grouped by theme with search. A new category is suggested a color that no other category uses yet.
+
+| v1 | v2 (Phase 1a) |
+|---|---|
+| ![](screenshots/v1/new-category.mobile.dark.png) | ![](screenshots/v2/phase-1a/new-category.mobile.dark.png) |
+
+### Edit a category, e.g. give Coffee its own color
+**Why:** the demo's "Coffee" was indistinguishable from "Food".
+**Change:** the same editor opens for existing categories, defaults included. The image shows Coffee moved to "Deep orange".
+
+| v2 (Phase 1a): edit | v2 (Phase 1a): icon search "sport" |
+|---|---|
+| ![](screenshots/v2/phase-1a/category-editor.mobile.dark.png) | ![](screenshots/v2/phase-1a/icon-search.mobile.dark.png) |
+
+### Delete: expenses are moved, never orphaned
+**Why:** deleting a category that still has expenses would leave them without a category.
+**Change:** the dialog shows how many expenses the category has and asks where to move them before "Move & delete" is enabled. Default categories are hidden instead of deleted.
+
+| v2 (Phase 1a) |
+|---|
+| ![](screenshots/v2/phase-1a/delete-category.mobile.dark.png) |
+
+### Profile: a Categories card
+**Change:** it sits between App Settings and Notifications, with a preview of the first 7 categories and a count.
+
+| Phase 0 | Phase 1a |
+|---|---|
+| ![](screenshots/v2/phase-0/profile.mobile.dark.full.png) | ![](screenshots/v2/phase-1a/profile.mobile.dark.full.png) |
+
+### Add expense: "New" and "Manage"
+**Change:** "New" opens the category editor on top of the sheet, and the new category is selected when saved. "Manage" opens the Categories screen. The grid follows the user's order and names, and leaves out hidden categories.
+
+### Light mode: readable text on selected tiles
+**Why:** v1 always used white text on a filled tile, which was hard to read on light colors like yellow. With custom colors, anything is possible.
+**Change:** the text is black or white, whichever contrasts more. In the demo, the selected "Food" tile now has black text. Very light custom colors are also darkened a little in light mode, and very dark ones lifted in dark mode.
+
+| Phase 0 light | Phase 1a light |
+|---|---|
+| ![](screenshots/v2/phase-0/add-expense-filled.mobile.light.png) | ![](screenshots/v2/phase-1a/add-expense-filled.mobile.light.png) |

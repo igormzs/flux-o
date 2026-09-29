@@ -183,3 +183,71 @@ v1 color tokens (`"mint"`, `"coral"`…) are still accepted and map to their exa
 ---
 
 <!-- Phase "after" sections are appended below. -->
+
+## Phase 1a: Categories 2.0
+
+Full write-up: [01a-categories.md](01a-categories.md).
+
+### Data model (after Phase 1a)
+
+```mermaid
+erDiagram
+    auth_users ||--o{ custom_categories : owns
+    auth_users ||--o{ expenses : owns
+    custom_categories {
+        uuid id PK
+        text label
+        text icon "any of 209 names"
+        text color "any hex (v1 tokens still accepted)"
+        text builtin_key "NEW · 'food'… = override of a default; null = custom"
+        int sort_order "NEW · null until the user reorders"
+        timestamptz hidden_at "NEW · hidden defaults"
+    }
+    expenses {
+        text category "unchanged: default key OR custom uuid"
+    }
+```
+
+- **No expense rows changed.** Defaults are still referenced by key (`'food'`). A user's changes to a default live in an override row with `builtin_key = 'food'`, unique per user.
+- **`delete_category(p_category, p_move_to)`** moves the category's expenses and then deletes it (custom) or hides it (default), in one transaction. It runs as the caller, so row-level security applies, and anonymous users can't execute it.
+
+### How a category is resolved
+
+```mermaid
+flowchart LR
+    id["expense.category"] --> B{"one of the 8 defaults?"}
+    B -- yes --> O{"override row<br/>builtin_key = id?"}
+    O -- yes --> M["default merged with the<br/>user's label · icon · color · hidden"]
+    O -- no --> D["default as shipped"]
+    B -- no --> C{"custom row<br/>id = id?"}
+    C -- yes --> CU["custom category"]
+    C -- no --> F["fallback: id as label, $ icon"]
+```
+
+`allCategories()` then orders them by `sort_order`, falling back to v1's order (defaults, then custom by creation date), and leaves out hidden ones unless asked.
+
+### Writes
+
+| Action | Request(s) |
+|---|---|
+| Create | `insert` with `sort_order` = after the last category |
+| Edit a custom category | `update … where id` |
+| Edit a default | `upsert … on conflict (user_id, builtin_key)` |
+| Reorder | Create any missing override rows (`ignore duplicates`), then one batched upsert for defaults and one for custom rows. Applied to the cache first (optimistic), rolled back if it fails |
+| Delete / hide | Make sure the override row exists (defaults), then `rpc('delete_category')` |
+| Restore | `update hidden_at = null` |
+
+### Bundle
+
+| | Phase 0 | Phase 1a |
+|---|---|---|
+| Main JS (gzip) | 386 KB | 401 KB |
+| Icon catalog (gzip, loaded on demand) | — | 160 KB |
+| Icons in the main bundle | 28 | 28 (v1's, so existing categories render instantly) |
+
+### Tests
+
+| | Phase 0 | Phase 1a |
+|---|---|---|
+| Unit tests | 31 | 41 |
+| End-to-end | scripted once | `npm run smoke:categories`, 22 checks, committed |
