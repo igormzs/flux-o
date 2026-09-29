@@ -7,6 +7,7 @@ import { ArrowLeft, CalendarBlank, TrendUp, TrendDown, ChartLineUp, Clock, Calen
 import { DateRange as DayPickerRange } from "react-day-picker";
 import CategoryIcon from "@/components/CategoryIcon";
 import ThemeToggle from "@/components/ThemeToggle";
+import StoredImage from "@/components/StoredImage";
 import InsightDetailsSheet from "@/components/InsightDetailsSheet";
 import OtherCurrenciesNote from "@/components/OtherCurrenciesNote";
 import { DateRangePicker } from "@/components/DateRangePicker";
@@ -147,7 +148,7 @@ const Insights = () => {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Link to="/profile" aria-label="Profile" className="w-9 h-9 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-glass-border hover:border-primary/50 transition-colors">
-            {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" /> : <span className="text-[10px] font-bold text-primary">{initials}</span>}
+            <StoredImage value={profile?.avatar_url} className="w-full h-full object-cover" fallback={<span className="text-[10px] font-bold text-primary">{initials}</span>} />
           </Link>
         </div>
       </motion.div>

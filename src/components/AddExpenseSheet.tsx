@@ -1,3 +1,4 @@
+import StoredImage from "./StoredImage";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Camera, CalendarBlank, SlidersHorizontal, Stack } from "@phosphor-icons/react";
@@ -179,7 +180,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
                 placeholder="What did you spend on?"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full h-11 rounded-xl bg-muted border-none px-4 text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/30 text-sm"
+                className="w-full h-11 rounded-xl bg-muted border-none px-4 text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/30 text-base md:text-sm"
               />
             </div>
 
@@ -192,7 +193,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
-                className="w-full rounded-xl bg-muted border-none px-4 py-3 text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/30 text-sm resize-none"
+                className="w-full rounded-xl bg-muted border-none px-4 py-3 text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/30 text-base md:text-sm resize-none"
               />
             </div>
 
@@ -252,7 +253,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
+                    className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10 text-base"
                   />
                 </div>
               </div>
@@ -263,7 +264,7 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
               <label className="text-sm text-muted-foreground mb-1.5 block">Receipt / Image</label>
               {imagePreview ? (
                 <div className="relative w-full h-32 rounded-xl overflow-hidden">
-                  <img src={imagePreview} alt="Receipt" className="w-full h-full object-cover" />
+                  <StoredImage value={imagePreview} alt="Receipt" className="w-full h-full object-cover" fallback={<div className="w-full h-full bg-muted animate-pulse" />} />
                   <button
                     onClick={() => { setImageFile(null); setImagePreview(null); }}
                     className="absolute top-2 right-2 w-6 h-6 rounded-full bg-background/80 flex items-center justify-center"

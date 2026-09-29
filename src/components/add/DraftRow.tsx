@@ -61,14 +61,14 @@ const DraftRow = ({ draft, index, categories, errors, showErrors, onChange, onRe
               (e.currentTarget.closest("[data-testid=draft-row]")?.querySelector("[data-field=amount]") as HTMLInputElement | null)?.focus();
             }
           }}
-          className="flex-1 min-w-0 h-9 rounded-lg bg-muted px-3 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/30"
+          className="flex-1 min-w-0 h-9 rounded-lg bg-muted px-3 text-base md:text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/30"
         />
         <div className="flex items-center h-9 rounded-lg bg-muted focus-within:ring-2 focus-within:ring-primary/30 shrink-0">
           <select
             aria-label={`Currency, row ${n}`}
             value={draft.currency}
             onChange={(e) => onChange({ currency: e.target.value })}
-            className="h-full bg-transparent pl-2 pr-0.5 text-xs font-bold text-muted-foreground outline-none appearance-none cursor-pointer"
+            className="h-full bg-transparent pl-2 pr-0.5 text-base md:text-xs font-bold text-muted-foreground outline-none appearance-none cursor-pointer"
           >
             {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.symbol}</option>)}
           </select>
@@ -86,7 +86,7 @@ const DraftRow = ({ draft, index, categories, errors, showErrors, onChange, onRe
                 onNext();
               }
             }}
-            className="w-20 h-full bg-transparent px-1.5 text-sm font-bold text-foreground text-right outline-none placeholder:text-muted-foreground/40"
+            className="w-20 h-full bg-transparent px-1.5 text-base md:text-sm font-bold text-foreground text-right outline-none placeholder:text-muted-foreground/40"
           />
         </div>
       </div>
@@ -98,7 +98,7 @@ const DraftRow = ({ draft, index, categories, errors, showErrors, onChange, onRe
           value={draft.date}
           max={format(new Date(), "yyyy-MM-dd")}
           onChange={(e) => onChange({ date: e.target.value })}
-          className="h-9 rounded-lg bg-muted px-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+          className="h-9 rounded-lg bg-muted px-2 text-base md:text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/30"
         />
         <div className="flex-1 min-w-0">
           <CategoryPicker

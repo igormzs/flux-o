@@ -3,15 +3,28 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Camera, User, SignOut, Trash, Check, CaretRight } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import ThemeToggle from "@/components/ThemeToggle";
+import StoredImage from "@/components/StoredImage";
+import { uploadImage } from "@/lib/storage";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { CURRENCIES } from "@/lib/currencies";
 import { useProfile, useSettings, useUpdateProfile, useUpdateSettings } from "@/hooks/useProfile";
 import type { DefaultScope, Settings, WeekendRule } from "@/lib/settings";
-import { useCustomCategories } from "@/hooks/useExpenses";
+import { expenseKeys, useCustomCategories } from "@/hooks/useExpenses";
+import { useQueryClient } from "@tanstack/react-query";
+import { clearExpenseData } from "@/lib/expenses";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { allCategories, categoryStyle } from "@/lib/categories";
 import CategoryIcon from "@/components/CategoryIcon";
 
@@ -31,6 +44,23 @@ const WEEKEND_RULE_LABELS: [WeekendRule, string][] = [
 
 const Profile = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
+
+  const handleClearData = async () => {
+    setClearing(true);
+    try {
+      const n = await clearExpenseData();
+      await queryClient.invalidateQueries({ queryKey: expenseKeys.all });
+      toast.success(n === 1 ? "Deleted 1 expense" : `Deleted ${n} expenses`);
+      setConfirmClear(false);
+    } catch (err) {
+      toast.error(`Couldn't clear your data: ${(err as Error).message}`);
+    } finally {
+      setClearing(false);
+    }
+  };
   const { user, signOut } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -65,15 +95,15 @@ const Profile = () => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     const ext = file.name.split(".").pop();
-    const path = `${user.id}/avatar.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("expense-images")
-      .upload(path, file, { upsert: true });
-    if (uploadError) { toast.error(uploadError.message); return; }
-
-    const { data } = supabase.storage.from("expense-images").getPublicUrl(path);
-    const url = data.publicUrl + "?t=" + Date.now();
+    let path: string;
+    try {
+      path = await uploadImage(file, `avatar.${ext}`, true);
+    } catch (err) {
+      toast.error((err as Error).message);
+      return;
+    }
+    // The query changes the stored value, so the new photo gets a fresh link.
+    const url = `${path}?t=${Date.now()}`;
     updateProfile.mutate({ avatar_url: url }, {
       onSuccess: () => toast.success("Avatar updated!"),
       onError: (err) => toast.error(err.message),
@@ -128,11 +158,7 @@ const Profile = () => {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-5 mb-4 flex flex-col items-center">
         <div className="relative mb-4">
           <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-glass-border">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <User size={32} className="text-muted-foreground" />
-            )}
+            <StoredImage value={avatarUrl} alt="Avatar" className="w-full h-full object-cover" fallback={<User size={32} className="text-muted-foreground" />} />
           </div>
           <button
             onClick={() => fileRef.current?.click()}
@@ -229,7 +255,7 @@ const Profile = () => {
               max={31}
               value={pendingSettings.cycleDay}
               onChange={(e) => updatePendingSetting({ cycleDay: Math.min(31, Math.max(1, Number(e.target.value) || 1)) })}
-              className="bg-muted border-none text-foreground font-bold h-11 text-sm"
+              className="bg-muted border-none text-foreground font-bold h-11 text-base md:text-sm"
             />
             <p className="text-[11px] text-muted-foreground mt-1.5">
               Your cycle runs from day {pendingSettings.cycleDay} to the day before it next month. Days past a month's end use its last day.
@@ -342,11 +368,31 @@ const Profile = () => {
           Sign out
         </button>
         <div className="border-t border-glass-border pt-3">
-          <button onClick={() => toast.success("Data cleared")} className="flex items-center gap-2 text-destructive text-sm font-medium hover:opacity-80 transition-opacity">
+          <button onClick={() => setConfirmClear(true)} className="flex items-center gap-2 text-destructive text-sm font-medium hover:opacity-80 transition-opacity">
             <Trash size={18} weight="bold" />
             Clear all expense data
           </button>
         </div>
+        <AlertDialog open={confirmClear} onOpenChange={(v) => !clearing && setConfirmClear(v)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete all your expenses?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Every expense and receipt photo is deleted for good. Your categories, settings and profile stay. This can’t be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={clearing}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={clearing}
+                onClick={(e) => { e.preventDefault(); handleClearData(); }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {clearing ? "Deleting…" : "Delete everything"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </motion.div>
     </div>
   );

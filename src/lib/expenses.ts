@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { DateRange } from "./date-utils";
 import { DEFAULT_CATEGORIES, isBuiltinKey } from "./categories";
+import { deleteReceipts, uploadImage } from "./storage";
 
 export interface Expense {
   id: string;
@@ -250,20 +251,18 @@ export async function countExpensesInCategory(id: string) {
   return count ?? 0;
 }
 
+/** Upload a receipt. Returns its path in the (private) bucket for `image_url`. */
 export async function uploadExpenseImage(file: File): Promise<string> {
+  const ext = file.name.split(".").pop();
+  return uploadImage(file, `${crypto.randomUUID()}.${ext}`);
+}
+
+/** Delete all of the user's expenses and receipts. Categories and settings stay. */
+export async function clearExpenseData(): Promise<number> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
-
-  const ext = file.name.split(".").pop();
-  const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-
-  const { error } = await supabase.storage
-    .from("expense-images")
-    .upload(path, file);
+  const { count, error } = await supabase.from("expenses").delete({ count: "exact" }).eq("user_id", user.id);
   if (error) throw error;
-
-  const { data } = supabase.storage
-    .from("expense-images")
-    .getPublicUrl(path);
-  return data.publicUrl;
+  await deleteReceipts(user.id);
+  return count ?? 0;
 }

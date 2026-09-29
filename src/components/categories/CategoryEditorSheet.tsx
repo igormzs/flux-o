@@ -130,7 +130,7 @@ const CategoryEditorSheet = ({ open, onClose, category, onSaved, onDelete }: Cat
                   onBlur={() => setTouched(true)}
                   aria-invalid={touched && !!error}
                   aria-describedby="category-name-error"
-                  className="w-full h-11 rounded-xl bg-muted border-none px-4 text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/30 text-sm"
+                  className="w-full h-11 rounded-xl bg-muted border-none px-4 text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/30 text-base md:text-sm"
                 />
               </div>
             </div>

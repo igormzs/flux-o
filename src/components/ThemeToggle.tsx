@@ -8,13 +8,32 @@ import { motion } from "framer-motion";
  * "dark" on mount before reading the saved value, which reset light mode on
  * every reload.)
  */
+/**
+ * Switch the theme in one step. Every element otherwise fades its own colors
+ * (the global transition in index.css) at slightly different speeds, and on
+ * iOS Safari text over the blurred cards briefly showed boxes of the old
+ * theme. Where supported, the whole page cross-fades instead.
+ */
+function applyTheme(dark: boolean) {
+  const root = document.documentElement;
+  const swap = () => {
+    root.classList.add("theme-switching");
+    root.classList.toggle("light", !dark);
+    void root.offsetHeight; // apply the new colors with transitions off
+    root.classList.remove("theme-switching");
+  };
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  if (document.startViewTransition && !reduceMotion) document.startViewTransition(swap);
+  else swap();
+}
+
 const ThemeToggle = () => {
   const [isDark, setIsDark] = useState(() => !document.documentElement.classList.contains("light"));
 
   const toggle = () => {
     const next = !isDark;
     setIsDark(next);
-    document.documentElement.classList.toggle("light", !next);
+    applyTheme(next);
     try {
       localStorage.setItem("theme", next ? "dark" : "light");
     } catch {

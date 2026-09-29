@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Plus, SignOut, HandWaving } from "@phosphor-icons/react";
 import ThemeToggle from "@/components/ThemeToggle";
+import StoredImage from "@/components/StoredImage";
 import { Expense } from "@/lib/expenses";
 import BalanceCard from "@/components/BalanceCard";
 import TransactionCard from "@/components/TransactionCard";
@@ -87,11 +88,12 @@ const Dashboard = () => {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Link to="/profile" className="w-9 h-9 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-glass-border hover:border-primary/50 transition-colors">
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-[10px] font-bold text-primary">{initials}</span>
-            )}
+            <StoredImage
+              value={profile.avatar_url}
+              alt="Profile"
+              className="w-full h-full object-cover"
+              fallback={<span className="text-[10px] font-bold text-primary">{initials}</span>}
+            />
           </Link>
           <button onClick={() => signOut()} className="hidden md:flex w-9 h-9 rounded-full bg-muted items-center justify-center text-muted-foreground hover:text-destructive transition-colors">
             <SignOut size={18} weight="bold" />

@@ -83,7 +83,7 @@ const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
             if (HEX_RE.test(next)) onChange(next.toLowerCase());
           }}
           onBlur={() => setDraft(hex)}
-          className="h-9 w-28 rounded-lg bg-muted px-3 font-mono text-sm text-foreground uppercase outline-none focus:ring-2 focus:ring-primary/30"
+          className="h-9 w-28 rounded-lg bg-muted px-3 font-mono text-base md:text-sm text-foreground uppercase outline-none focus:ring-2 focus:ring-primary/30"
         />
         <span className="text-xs text-muted-foreground">Custom</span>
       </div>

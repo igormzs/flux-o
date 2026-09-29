@@ -100,7 +100,7 @@ const PaydaySheet = ({ open, onClose, cycle, settings }: PaydaySheetProps) => {
                 min={min}
                 max={max}
                 onChange={(e) => setValue(e.target.value)}
-                className="flex-1 h-11 rounded-xl bg-muted px-4 text-foreground text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                className="flex-1 h-11 rounded-xl bg-muted px-4 text-foreground text-base md:text-sm outline-none focus:ring-2 focus:ring-primary/30"
               />
               {override && (
                 <button onClick={handleReset} className="h-11 px-3 rounded-xl bg-muted text-sm text-foreground flex items-center gap-1.5 hover:bg-muted/80">

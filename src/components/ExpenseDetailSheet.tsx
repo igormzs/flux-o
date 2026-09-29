@@ -1,3 +1,4 @@
+import StoredImage from "./StoredImage";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, CalendarBlank, PencilSimple, Trash } from "@phosphor-icons/react";
 import { format } from "date-fns";
@@ -96,10 +97,11 @@ const ExpenseDetailSheet = ({ expense, open, onClose, onDelete, onEdit, customCa
               {expense.image_url && (
                 <div className="glass-card p-4">
                   <p className="text-xs text-muted-foreground mb-2">Receipt</p>
-                  <img
-                    src={expense.image_url}
+                  <StoredImage
+                    value={expense.image_url}
                     alt="Expense receipt"
                     className="w-full rounded-xl object-cover max-h-48"
+                    fallback={<div className="w-full h-32 rounded-xl bg-muted animate-pulse" />}
                   />
                 </div>
               )}

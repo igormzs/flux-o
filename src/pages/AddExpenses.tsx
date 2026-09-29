@@ -229,7 +229,7 @@ const AddExpenses = () => {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={EXAMPLE}
-            className="w-full rounded-xl bg-muted px-4 py-3 font-mono text-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/30 resize-y"
+            className="w-full rounded-xl bg-muted px-4 py-3 font-mono text-base md:text-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/30 resize-y"
           />
           <p className="flex gap-1.5 text-[11px] text-muted-foreground mt-2 mb-3">
             <Info size={14} className="shrink-0 mt-px" />

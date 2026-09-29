@@ -17,6 +17,8 @@ export const MOCK_SUPABASE_URL = "https://demo.supabase.co";
 export const MOCK_SUPABASE_KEY = "demo-anon-key";
 /** supabase-js derives its storage key from the project ref (the first host label). */
 export const MOCK_AUTH_STORAGE_KEY = "sb-demo-auth-token";
+/** A 1×1 PNG, served for every signed image link. */
+const TINY_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
 
 type Row = Record<string, unknown>;
 type Tables = Record<string, Row[]>;
@@ -173,8 +175,41 @@ export async function installMockSupabase(
 
     // ── Storage ───────────────────────────────────────────
     if (url.pathname.startsWith("/storage/v1/")) {
-      if (method === "GET") return route.fulfill({ status: 404 });
-      return json(route, 200, { Key: url.pathname.split("/object/")[1] ?? "demo" });
+      // Files live in `tables.storage` as { bucket, name } rows. Only signed
+      // links serve a file: the bucket is private (like production).
+      const files = (tables.storage ??= []);
+      const rest = decodeURIComponent(url.pathname.slice("/storage/v1/object/".length));
+      const [kind, bucket, ...parts] = rest.split("/");
+      if (kind === "sign") {
+        const name = parts.join("/");
+        const exists = files.some((f) => f.bucket === bucket && f.name === name);
+        if (method === "POST") {
+          return exists
+            ? json(route, 200, { signedURL: `/object/sign/${bucket}/${name}?token=demo` })
+            : json(route, 400, { statusCode: "404", error: "not_found", message: "Object not found" });
+        }
+        return exists ? route.fulfill({ status: 200, contentType: "image/png", body: TINY_PNG }) : route.fulfill({ status: 400 });
+      }
+      if (kind === "public") return route.fulfill({ status: 400, body: "Bucket not found" });
+      if (kind === "list" && method === "POST") {
+        const { prefix = "" } = req.postDataJSON() ?? {};
+        const inFolder = files.filter((f) => f.bucket === bucket && f.name.startsWith(`${prefix}/`));
+        return json(route, 200, inFolder.map((f) => ({ id: f.name, name: f.name.slice(prefix.length + 1) })));
+      }
+      if (method === "DELETE") {
+        const { prefixes = [] } = req.postDataJSON() ?? {};
+        const removed = files.filter((f) => kind === f.bucket && prefixes.includes(f.name));
+        tables.storage = files.filter((f) => !removed.includes(f));
+        return json(route, 200, removed.map((f) => ({ name: f.name, bucket_id: f.bucket })));
+      }
+      if (method === "POST" || method === "PUT") {
+        const name = [bucket, ...parts].join("/");
+        const i = files.findIndex((f) => f.bucket === kind && f.name === name);
+        if (i !== -1) files.splice(i, 1);
+        files.push({ bucket: kind, name });
+        return json(route, 200, { Key: `${kind}/${name}` });
+      }
+      return route.fulfill({ status: 404 });
     }
 
     // ── RPC ───────────────────────────────────────────────
@@ -248,7 +283,11 @@ export async function installMockSupabase(
     if (method === "DELETE") {
       const hit = new Set(applyQuery(rows, params));
       tables[table] = rows.filter((r) => !hit.has(r));
-      return prefer.includes("return=representation") ? respond([...hit]) : route.fulfill({ status: 204 });
+      if (prefer.includes("return=representation")) return respond([...hit]);
+      const counted = prefer.includes("count=exact")
+        ? { "access-control-allow-origin": "*", "access-control-expose-headers": "content-range", "content-range": `*/${hit.size}` }
+        : undefined;
+      return route.fulfill({ status: 204, headers: counted });
     }
 
     return json(route, 405, { message: "method not mocked" });

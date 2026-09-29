@@ -66,7 +66,7 @@ const IconPicker = ({ value, onChange }: IconPickerProps) => {
           placeholder="Search icons — try “gym” or “coffee”"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none [&::-webkit-search-cancel-button]:hidden"
+          className="w-full bg-transparent text-base md:text-sm text-foreground placeholder:text-muted-foreground/50 outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         {query && (
           <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="text-muted-foreground hover:text-foreground">
