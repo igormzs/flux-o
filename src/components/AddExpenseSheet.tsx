@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Camera, CalendarBlank } from "@phosphor-icons/react";
+import { X, Plus, Camera, CalendarBlank, SlidersHorizontal } from "@phosphor-icons/react";
+import { useNavigate } from "react-router-dom";
 import { uploadExpenseImage, Expense } from "@/lib/expenses";
-import { allCategories, categoryStyle, LEGACY_COLORS } from "@/lib/categories";
+import { allCategories, categoryStyle, resolveCategory } from "@/lib/categories";
 import { CURRENCIES } from "@/lib/currencies";
-import { useCreateCategory, useCustomCategories, useExpenseMutations } from "@/hooks/useExpenses";
+import { useCustomCategories, useExpenseMutations } from "@/hooks/useExpenses";
 import { useSettings } from "@/hooks/useProfile";
 import CategoryIcon from "./CategoryIcon";
+import CategoryEditorSheet from "./categories/CategoryEditorSheet";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -15,15 +17,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-const COLORS = Object.values(LEGACY_COLORS);
-
-const PHOSPHOR_ICONS = [
-  "Pizza", "ShoppingCart", "House", "Television", "BeerBottle", "Plug", "Gift", "AirplaneTilt",
-  "Car", "Heart", "Star", "Coffee", "Dog", "Cat", "GameController", "MusicNote",
-  "GraduationCap", "Barbell", "FirstAid", "Scissors", "PaintBrush", "Wrench",
-  "Phone", "Laptop", "Book", "Briefcase", "ShoppingBag", "Baby",
-];
 
 interface AddExpenseSheetProps {
   open: boolean;
@@ -44,12 +37,9 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
   const [loading, setLoading] = useState(false);
   const { settings } = useSettings();
   const { data: customCategories = [] } = useCustomCategories();
-  const createCategory = useCreateCategory();
   const { save, update } = useExpenseMutations();
   const [showNewCategory, setShowNewCategory] = useState(false);
-  const [newCatLabel, setNewCatLabel] = useState("");
-  const [newCatIcon, setNewCatIcon] = useState("Star");
-  const [newCatColor, setNewCatColor] = useState(COLORS[0]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (open) {
@@ -83,19 +73,6 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
     if (file) {
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleCreateCategory = async () => {
-    if (!newCatLabel.trim()) return;
-    try {
-      const cat = await createCategory.mutateAsync({ label: newCatLabel.trim(), icon: newCatIcon, color: newCatColor });
-      setCategory(cat.id);
-      setShowNewCategory(false);
-      setNewCatLabel("");
-      toast.success("Category created!");
-    } catch (err) {
-      toast.error((err as Error).message);
     }
   };
 
@@ -153,6 +130,8 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
   };
 
   const categories = allCategories(customCategories);
+  // An expense being edited may use a category that was hidden since; keep it selectable.
+  if (category && !categories.some((c) => c.id === category)) categories.push(resolveCategory(category, customCategories));
 
   return (
     <AnimatePresence>
@@ -293,7 +272,16 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
 
             {/* Category grid */}
             <div className="mb-6">
-              <label className="text-sm text-muted-foreground mb-2 block">Category</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm text-muted-foreground">Category</label>
+                <button
+                  type="button"
+                  onClick={() => { onClose(); navigate("/categories"); }}
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                >
+                  <SlidersHorizontal size={14} /> Manage
+                </button>
+              </div>
               <div className="grid grid-cols-4 gap-2">
                 {categories.map((cat) => (
                   <button
@@ -321,80 +309,6 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
               </div>
             </div>
 
-            {/* New category form */}
-            <AnimatePresence>
-              {showNewCategory && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mb-6 overflow-hidden"
-                >
-                  <div className="glass-card p-4 space-y-3">
-                    <h4 className="font-display font-bold text-sm text-foreground">New Category</h4>
-                    <label htmlFor="new-cat-label" className="sr-only">New Category Name</label>
-                    <input
-                      id="new-cat-label"
-                      type="text"
-                      placeholder="Category name"
-                      value={newCatLabel}
-                      onChange={(e) => setNewCatLabel(e.target.value)}
-                      className="w-full h-10 rounded-lg bg-muted border-none px-3 text-foreground placeholder:text-muted-foreground/40 outline-none text-sm"
-                    />
-                    {/* Icon picker */}
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1.5 block">Icon</label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {PHOSPHOR_ICONS.map((icon) => (
-                          <button
-                            key={icon}
-                            onClick={() => setNewCatIcon(icon)}
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs transition-all ${
-                              newCatIcon === icon ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
-                            }`}
-                          >
-                            <CategoryIcon categoryId="__custom__" customIcon={icon} size={16} />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    {/* Color picker */}
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1.5 block">Color</label>
-                      <div className="flex gap-2">
-                        {COLORS.map((c) => (
-                          <button
-                            key={c}
-                            onClick={() => setNewCatColor(c)}
-                            aria-label={`Color ${c}`}
-                            className={`cat w-7 h-7 rounded-full transition-all bg-[var(--cat-tone)] ${
-                              newCatColor === c ? "ring-2 ring-foreground ring-offset-2 ring-offset-card" : ""
-                            }`}
-                            style={categoryStyle(c)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setShowNewCategory(false)}
-                        className="flex-1 h-9 rounded-lg bg-muted text-muted-foreground text-sm font-medium"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleCreateCategory}
-                        disabled={!newCatLabel.trim()}
-                        className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground text-sm font-bold disabled:opacity-40"
-                      >
-                        Create
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             {/* Submit */}
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -405,6 +319,11 @@ const AddExpenseSheet = ({ open, onClose, onAdded, expense }: AddExpenseSheetPro
               {loading ? (expense ? "Saving..." : "Adding...") : (expense ? "Save Changes" : "Add Expense")}
             </motion.button>
           </motion.div>
+          <CategoryEditorSheet
+            open={showNewCategory}
+            onClose={() => setShowNewCategory(false)}
+            onSaved={(id) => setCategory(id)}
+          />
         </>
       )}
     </AnimatePresence>

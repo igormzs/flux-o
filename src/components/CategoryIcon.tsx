@@ -30,8 +30,14 @@ import {
   Baby,
   type IconProps,
 } from "@phosphor-icons/react";
-import { ComponentType } from "react";
+import { useEffect, type ComponentType } from "react";
+import { loadIconCatalog, useIconCatalog } from "@/lib/icon-loader";
 
+/**
+ * v1's 28 icons (plus the per-category defaults) ship in the main bundle, so
+ * existing categories render immediately. Anything else comes from the lazily
+ * loaded catalog below.
+ */
 const iconMap: Record<string, ComponentType<IconProps>> = {
   food: Pizza,
   grocery: ShoppingCart,
@@ -82,12 +88,18 @@ interface CategoryIconProps {
 }
 
 const CategoryIcon = ({ categoryId, customIcon, size = 20, weight = "duotone", className }: CategoryIconProps) => {
-  let Icon: ComponentType<IconProps>;
-  if (customIcon && iconMap[customIcon]) {
-    Icon = iconMap[customIcon];
-  } else {
-    Icon = iconMap[categoryId] ?? CurrencyDollar;
-  }
+  const loaded = useIconCatalog();
+  const eager = (customIcon && iconMap[customIcon]) || (!customIcon && iconMap[categoryId]);
+  const fromCatalog = !eager && customIcon ? loaded?.ICON_CATALOG.find((i) => i.name === customIcon)?.Icon : undefined;
+  const needsCatalog = !eager && !!customIcon && !loaded;
+
+  useEffect(() => {
+    if (needsCatalog) loadIconCatalog();
+  }, [needsCatalog]);
+
+  // Keep the space while the catalog loads, so rows don't shift.
+  if (needsCatalog) return <span aria-hidden style={{ width: size, height: size, display: "inline-block" }} className={className} />;
+  const Icon = eager || fromCatalog || CurrencyDollar;
   return <Icon size={size} weight={weight} className={className} />;
 };
 

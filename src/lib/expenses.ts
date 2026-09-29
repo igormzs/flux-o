@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { DateRange } from "./date-utils";
+import { DEFAULT_CATEGORIES, isBuiltinKey } from "./categories";
 
 export interface Expense {
   id: string;
@@ -17,6 +18,10 @@ export interface Expense {
   updated_at: string;
 }
 
+/**
+ * A row of `custom_categories`: either a category the user created, or (when
+ * `builtin_key` is set) the user's saved changes to a default category.
+ */
 export interface CustomCategory {
   id: string;
   user_id: string;
@@ -24,6 +29,12 @@ export interface CustomCategory {
   icon: string;
   color: string;
   created_at: string;
+  /** Set when this row overrides a default category, e.g. "food". */
+  builtin_key?: string | null;
+  /** Position in the user's list; null until the user reorders. */
+  sort_order?: number | null;
+  /** Hidden categories stay resolvable but aren't offered in pickers. */
+  hidden_at?: string | null;
 }
 
 export interface ExpenseInput {
@@ -97,21 +108,118 @@ export async function getCustomCategories() {
   return data as CustomCategory[];
 }
 
-export async function createCustomCategory(category: {
+export interface CategoryLook {
   label: string;
   icon: string;
   color: string;
-}) {
+}
+
+async function requireUserId() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
+  return user.id;
+}
 
+export async function createCustomCategory(category: CategoryLook & { sort_order?: number }) {
+  const userId = await requireUserId();
   const { data, error } = await supabase
     .from("custom_categories")
-    .insert({ ...category, user_id: user.id })
+    .insert({ ...category, user_id: userId })
     .select()
     .single();
   if (error) throw error;
   return data as CustomCategory;
+}
+
+/**
+ * Saves a category's label, icon and color. A default category ("food") gets
+ * an override row keyed by builtin_key; a custom one is updated in place.
+ */
+export async function updateCategory(id: string, look: CategoryLook) {
+  if (!isBuiltinKey(id)) {
+    const { error } = await supabase.from("custom_categories").update(look).eq("id", id);
+    if (error) throw error;
+    return;
+  }
+  const userId = await requireUserId();
+  const { error } = await supabase
+    .from("custom_categories")
+    .upsert({ ...look, user_id: userId, builtin_key: id }, { onConflict: "user_id,builtin_key" });
+  if (error) throw error;
+}
+
+/**
+ * Creates override rows for the default categories that don't have one yet,
+ * with their current look, so they can be hidden or given a position.
+ */
+async function ensureBuiltinRows(keys: string[], rows: CustomCategory[]) {
+  const missing = keys.filter((k) => isBuiltinKey(k) && !rows.some((r) => r.builtin_key === k));
+  if (!missing.length) return;
+  const userId = await requireUserId();
+  const { error } = await supabase.from("custom_categories").upsert(
+    missing.map((k) => {
+      const { label, icon, color } = DEFAULT_CATEGORIES.find((c) => c.id === k)!;
+      return { label, icon, color, user_id: userId, builtin_key: k };
+    }),
+    { onConflict: "user_id,builtin_key", ignoreDuplicates: true },
+  );
+  if (error) throw error;
+}
+
+/** Saves the user's category order: `orderedIds[i]` gets position i. */
+export async function saveCategoryOrder(orderedIds: string[], rows: CustomCategory[]) {
+  await ensureBuiltinRows(orderedIds, rows);
+  const userId = await requireUserId();
+  const builtins = orderedIds.flatMap((id, i) => (isBuiltinKey(id) ? [{ id, i }] : []));
+  const customs = orderedIds.flatMap((id, i) => (isBuiltinKey(id) ? [] : [{ id, i }]));
+  // Two batched upserts (one per conflict key) instead of one request per row.
+  const results = await Promise.all([
+    builtins.length &&
+      supabase.from("custom_categories").upsert(
+        builtins.map(({ id, i }) => {
+          const r = rows.find((row) => row.builtin_key === id);
+          const d = DEFAULT_CATEGORIES.find((c) => c.id === id)!;
+          return { user_id: userId, builtin_key: id, label: r?.label ?? d.label, icon: r?.icon ?? d.icon, color: r?.color ?? d.color, sort_order: i };
+        }),
+        { onConflict: "user_id,builtin_key" },
+      ),
+    customs.length &&
+      supabase.from("custom_categories").upsert(
+        customs.flatMap(({ id, i }) => {
+          const r = rows.find((row) => row.id === id && !row.builtin_key);
+          return r ? [{ id: r.id, user_id: userId, label: r.label, icon: r.icon, color: r.color, sort_order: i }] : [];
+        }),
+        { onConflict: "id" },
+      ),
+  ]);
+  for (const res of results) if (res && res.error) throw res.error;
+}
+
+/**
+ * Deletes a category, first moving its expenses to `moveTo` (required when it
+ * has any). Default categories are hidden instead, so they can be restored.
+ * Returns how many expenses were moved.
+ */
+export async function deleteCategory(id: string, moveTo: string | null, rows: CustomCategory[]) {
+  await ensureBuiltinRows([id], rows);
+  const { data, error } = await supabase.rpc("delete_category", { p_category: id, p_move_to: moveTo });
+  if (error) throw error;
+  return data ?? 0;
+}
+
+/** Shows a hidden default category again. */
+export async function restoreCategory(id: string) {
+  const { error } = await supabase.from("custom_categories").update({ hidden_at: null }).eq("builtin_key", id);
+  if (error) throw error;
+}
+
+export async function countExpensesInCategory(id: string) {
+  const { count, error } = await supabase
+    .from("expenses")
+    .select("id", { count: "exact", head: true })
+    .eq("category", id);
+  if (error) throw error;
+  return count ?? 0;
 }
 
 export async function uploadExpenseImage(file: File): Promise<string> {

@@ -153,14 +153,27 @@
    */
   .cat {
     --cat-tone: var(--cat);
+    /* Text and icons on a filled (.cat-solid) background. */
+    --cat-ink: hsl(var(--primary-foreground));
   }
   .light .cat {
     --cat-tone: color-mix(in oklab, var(--cat) 72%, black);
   }
-  /* Darker but just as saturated, like v1's light-theme tokens. */
   @supports (color: oklch(from red l c h)) {
+    /*
+     * Users can pick any color (Phase 1a), so keep every tone readable:
+     * very dark colors are lifted on the dark theme and very light ones are
+     * capped on the light theme. v1's palette is inside both limits, so it
+     * looks the same as before.
+     */
+    .cat {
+      --cat-tone: oklch(from var(--cat) max(l, 0.62) c h);
+      /* Black on light tones, white on dark ones. */
+      --cat-ink: oklch(from var(--cat-tone) clamp(0, (0.64 - l) * 1000, 1) 0 0);
+    }
+    /* Darker but just as saturated, like v1's light-theme tokens. */
     .light .cat {
-      --cat-tone: oklch(from var(--cat) calc(l - 0.15) c h);
+      --cat-tone: oklch(from var(--cat) min(l - 0.15, 0.66) c h);
     }
   }
   /* Tinted chip: transaction icons, list rows. */
@@ -178,7 +191,7 @@
   .cat-solid {
     background-color: var(--cat-tone);
     border-color: var(--cat-tone);
-    color: hsl(var(--primary-foreground));
+    color: var(--cat-ink);
   }
 }
 

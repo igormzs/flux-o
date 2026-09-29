@@ -182,7 +182,11 @@ export async function installMockSupabase(
     if (rpcMatch) {
       const handler = rpc[rpcMatch[1]];
       if (!handler) return json(route, 404, { message: `rpc ${rpcMatch[1]} not mocked` });
-      return json(route, 200, handler(tables, req.postDataJSON() ?? {}) ?? null);
+      try {
+        return json(route, 200, handler(tables, req.postDataJSON() ?? {}) ?? null);
+      } catch (err) {
+        return json(route, 400, { code: "P0001", message: (err as Error).message });
+      }
     }
 
     // ── Tables ────────────────────────────────────────────
@@ -205,18 +209,24 @@ export async function installMockSupabase(
       return json(route, status, result, { "content-range": `0-${Math.max(result.length - 1, 0)}/${result.length}` });
     };
 
-    if (method === "GET" || method === "HEAD") return respond(applyQuery(rows, params));
+    if (method === "HEAD") {
+      const n = applyQuery(rows, params).length;
+      return route.fulfill({ status: 200, headers: { "access-control-allow-origin": "*", "access-control-expose-headers": "content-range", "content-range": `*/${n}` } });
+    }
+    if (method === "GET") return respond(applyQuery(rows, params));
 
     if (method === "POST") {
       const body = req.postDataJSON();
       const incoming = (Array.isArray(body) ? body : [body]).map((r: Row) => withDefaults(table, r));
       const upsert = prefer.includes("resolution=merge-duplicates");
+      const ignoreDuplicates = prefer.includes("resolution=ignore-duplicates");
       const conflictCols = (params.get("on_conflict") ?? "id").split(",");
       const written: Row[] = [];
       for (const row of incoming) {
-        const existing = upsert
-          ? rows.find((r) => conflictCols.every((c) => r[c] === row[c]))
+        const existing = upsert || ignoreDuplicates
+          ? rows.find((r) => conflictCols.every((c) => r[c] != null && r[c] === row[c]))
           : undefined;
+        if (existing && ignoreDuplicates) continue;
         if (existing) {
           Object.assign(existing, row, { id: existing.id });
           written.push(existing);

@@ -98,10 +98,59 @@ const SCREENS: Screen[] = [
       await openAddSheet(page);
       await clickFirst(page, ['[data-testid="new-category"]', 'button:has-text("New")']);
       await settle(page, 500);
-      await page.locator("#new-cat-label").fill("Pets");
-      // Bring the icon/color pickers into view, not just the name field.
-      await page.locator('button:has-text("Create")').last().scrollIntoViewIfNeeded();
+      // v1: inline form in the Add expense sheet; v2 (Phase 1a+): the category editor sheet.
+      const name = page.locator("#category-name, #new-cat-label").first();
+      await name.fill("Pets");
+      if (await page.locator("#category-name").count()) {
+        await page.getByRole("radio", { name: "Bright violet" }).click();
+        await page.locator('[role="radiogroup"][aria-label="Icon"]').scrollIntoViewIfNeeded();
+      } else {
+        // Bring the icon/color pickers into view, not just the name field.
+        await page.locator('button:has-text("Create")').last().scrollIntoViewIfNeeded();
+      }
       await settle(page, 400);
+    },
+  },
+  // ── Phase 1a: Categories 2.0 (these screens don't exist in v1) ──
+  {
+    name: "categories",
+    full: true,
+    run: async (page) => {
+      await page.goto("/categories");
+      await page.getByTestId("category-row-food").waitFor();
+    },
+  },
+  {
+    name: "category-editor",
+    run: async (page) => {
+      await page.goto("/categories");
+      await page.getByRole("button", { name: /^Edit Coffee/ }).click();
+      await settle(page, 500);
+      // The fix for "Coffee looks like Food": pick a color of its own.
+      await page.getByRole("radio", { name: "Deep orange" }).click();
+      await settle(page, 300);
+    },
+  },
+  {
+    name: "icon-search",
+    run: async (page) => {
+      await page.goto("/categories");
+      await page.getByRole("button", { name: /^Edit Gym/ }).click();
+      await settle(page, 500);
+      await page.locator("#icon-search").fill("sport");
+      await page.locator("#icon-search").scrollIntoViewIfNeeded();
+      await settle(page, 500);
+    },
+  },
+  {
+    name: "delete-category",
+    run: async (page) => {
+      await page.goto("/categories");
+      await page.getByRole("button", { name: /^Edit Coffee/ }).click();
+      await settle(page, 500);
+      await page.getByRole("button", { name: "Delete" }).click();
+      await page.getByText("Choose where to move").waitFor();
+      await page.getByRole("alertdialog").getByRole("radio", { name: "Food" }).click();
     },
   },
   {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Camera, User, SignOut, Trash, Check } from "@phosphor-icons/react";
+import { ArrowLeft, Camera, User, SignOut, Trash, Check, CaretRight } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,9 @@ import { toast } from "sonner";
 import { CURRENCIES } from "@/lib/currencies";
 import { useProfile, useSettings, useUpdateProfile, useUpdateSettings } from "@/hooks/useProfile";
 import type { DefaultScope, Settings } from "@/lib/settings";
+import { useCustomCategories } from "@/hooks/useExpenses";
+import { allCategories, categoryStyle } from "@/lib/categories";
+import CategoryIcon from "@/components/CategoryIcon";
 
 const SCOPE_LABELS: Record<DefaultScope, string> = {
   cycle: "Billing cycle",
@@ -29,6 +32,8 @@ const Profile = () => {
   const { settings } = useSettings();
   const updateProfile = useUpdateProfile();
   const updateSettings = useUpdateSettings();
+  const { data: customCategories = [] } = useCustomCategories();
+  const categories = allCategories(customCategories);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -256,6 +261,32 @@ const Profile = () => {
           </motion.button>
         </div>
       </motion.div>
+
+      {/* Categories */}
+      <motion.button
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        onClick={() => navigate("/categories")}
+        data-testid="manage-categories"
+        className="glass-card p-4 mb-4 w-full flex items-center gap-3 text-left hover:bg-card/80 transition-colors"
+      >
+        <div className="flex-1 min-w-0">
+          <h3 className="font-display font-bold text-foreground text-sm">Categories</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{categories.length} categories · create, edit, reorder</p>
+          <div className="flex gap-1.5 mt-3" aria-hidden>
+            {categories.slice(0, 7).map((c) => (
+              <span key={c.id} style={categoryStyle(c.color)} className="cat cat-soft w-8 h-8 rounded-lg flex items-center justify-center">
+                <CategoryIcon categoryId={c.id} customIcon={c.icon} size={16} />
+              </span>
+            ))}
+            {categories.length > 7 && (
+              <span className="w-8 h-8 rounded-lg bg-muted text-muted-foreground text-[11px] font-medium flex items-center justify-center">+{categories.length - 7}</span>
+            )}
+          </div>
+        </div>
+        <CaretRight size={18} weight="bold" className="text-muted-foreground shrink-0" />
+      </motion.button>
 
       {/* Notifications */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="glass-card p-4 mb-4">

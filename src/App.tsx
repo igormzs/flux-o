@@ -9,6 +9,7 @@ import Sidebar from "@/components/Sidebar";
 import Index from "./pages/Index";
 import Insights from "./pages/Insights";
 import Profile from "./pages/Profile";
+import Categories from "./pages/Categories";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -59,6 +60,7 @@ const AppRoutes = () => {
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/insights" element={<ProtectedRoute><Insights /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
           <Route path="/settings" element={<Navigate to="/profile" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

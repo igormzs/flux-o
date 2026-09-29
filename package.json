@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "screenshots": "node scripts/case-study/screenshots.ts"
+    "screenshots": "node scripts/case-study/screenshots.ts",
+    "smoke:categories": "node scripts/case-study/smoke-categories.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
