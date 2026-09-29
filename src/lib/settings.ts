@@ -27,7 +27,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  currency: "USD",
+  currency: "EUR",
   budgetGoal: 2000,
   cycleDay: DEFAULT_CYCLE_DAY,
   defaultScope: "cycle",

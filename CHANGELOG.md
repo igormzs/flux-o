@@ -31,7 +31,7 @@ The story behind each change, with before/after screenshots, is in [docs/case-st
 - The unused `storage.ts` (the v1 prototype's localStorage data model) and `constants.ts`.
 
 ### Migrations
-- `20260928120000_settings_on_profiles.sql`, `20260928120100_expense_currency_column.sql`. Apply them before deploying.
+- `20260928120000_settings_on_profiles.sql`, `20260928120100_expense_currency_column.sql`, `20260929090000_default_currency_eur.sql`. Apply them before deploying.
 
 ## [1.0.0] - 2026-09-28
 
