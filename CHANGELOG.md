@@ -13,11 +13,13 @@ The story behind each change, with before/after screenshots, is in [docs/case-st
 - "Send a test": a preview of the report on every device the user turned on.
 - The `notify` Edge Function, run hourly by `pg_cron`. Web Push encryption (RFC 8291) and VAPID (RFC 8292) are written on Web Crypto, with no dependency.
 - Migration `20261001100000_push_notifications.sql`: `push_subscriptions`, `notification_log`, `profiles.timezone` and the hourly schedule.
-- `npm run smoke:push`: 16 checks in real Google Chrome, including a notification delivered through Google's push service.
+- The catch-up reminder (replaces the "Daily reminder" switch): around 19:00 local time once nothing has been logged for 3 days, once more after 7 days, then quiet until something is logged. "Logged" is when an expense was added, not its date. Tapping it opens Add several.
+- `npm run smoke:push`: 17 checks in real Google Chrome, including a notification delivered through Google's push service.
 
 ### Changed — Notifications
 - The notification settings save when switched, instead of waiting for the settings Save button. Saving one setting no longer discards unsaved edits to the others.
-- "Over budget alert" and "Daily reminder" are marked Coming soon. They were switches that did nothing.
+- "Over budget alert" is marked Coming soon. It was a switch that did nothing.
+- Switches in the Notifications card flip at once, and every save includes all switches flipped so far, so two quick taps can't undo each other.
 
 ### Fixed — Polish after testing
 - Tapping a text field on iPhone no longer zooms the page (iOS Safari zooms into any field under 16px). Fields are 16px on phones and keep their compact size from tablet width up.

@@ -378,7 +378,7 @@ A global rule fades every element's background (0.3 s) and text (0.15 s) separat
 
 ## Notifications
 
-v1 had three notification switches that were saved but never used. The weekly report now works as a push notification. The other two are marked Coming soon.
+v1 had three notification switches that were saved but never used. The weekly report now works as a push notification, the daily reminder became a catch-up reminder, and the over budget alert is marked Coming soon.
 
 ```mermaid
 flowchart LR
@@ -402,10 +402,22 @@ flowchart LR
 | Secret for the schedule in Vault | Nothing secret is committed. The migration reads the URL and secret at run time | One extra SQL line when setting up |
 | JWT check off for this function | The schedule has no user token. The function checks the cron secret, or the signed-in user, itself | That check lives in the function's code |
 
+### The catch-up reminder
+
+The same hourly job sends a nudge when nothing has been logged for a while (`_shared/reminder.ts`, the "Daily reminder" setting).
+
+| Rule | Why |
+|---|---|
+| Counts from the last expense's `created_at`, not its date | Backfilling last weekend on Wednesday is logging on Wednesday |
+| Days are local calendar days, sent from 19:00 | Evening is when there's time to catch up |
+| One nudge at 3 days and one at 7, keyed by the last logged day | A daily reminder gets switched off. After the second nudge it stays quiet until something is logged |
+| Never for an account with no expenses | That's a new user, not a lapse |
+| Opens `/add` | Add several is the fastest way to catch up |
+
 ### Tests
 
 | | Polish | Notifications |
 |---|---|---|
-| Unit tests | 109 | 118 |
-| Browser checks | 89 | 105 (+ push 16, real Chrome) |
+| Unit tests | 109 | 124 |
+| Browser checks | 89 | 106 (+ push 17, real Chrome) |
 | Main JS (gzip) | 408 KB | 414 KB |
