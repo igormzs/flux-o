@@ -60,6 +60,8 @@ export type Database = {
           date: string
           id: string
           image_url: string | null
+          recurring_id: string | null
+          recurring_period: string | null
           note: string | null
           title: string
           updated_at: string
@@ -74,6 +76,8 @@ export type Database = {
           date?: string
           id?: string
           image_url?: string | null
+          recurring_id?: string | null
+          recurring_period?: string | null
           note?: string | null
           title: string
           updated_at?: string
@@ -88,6 +92,8 @@ export type Database = {
           date?: string
           id?: string
           image_url?: string | null
+          recurring_id?: string | null
+          recurring_period?: string | null
           note?: string | null
           title?: string
           updated_at?: string
@@ -102,6 +108,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      recurring_expenses: {
+        Row: {
+          active: boolean
+          amount: number
+          category: string
+          created_at: string
+          currency: string | null
+          day_of_month: number
+          id: string
+          skipped: string[]
+          starts_on: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          amount: number
+          category: string
+          created_at?: string
+          currency?: string | null
+          day_of_month: number
+          id?: string
+          skipped?: string[]
+          starts_on?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          amount?: number
+          category?: string
+          created_at?: string
+          currency?: string | null
+          day_of_month?: number
+          id?: string
+          skipped?: string[]
+          starts_on?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       push_subscriptions: {
         Row: {

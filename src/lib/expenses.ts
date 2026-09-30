@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { DateRange } from "./date-utils";
 import { DEFAULT_CATEGORIES, isBuiltinKey } from "./categories";
 import { deleteReceipts, uploadImage } from "./storage";
+import type { Confirmation, RecurringExpense, RecurringInput } from "./recurring";
 
 export interface Expense {
   id: string;
@@ -14,6 +15,9 @@ export interface Expense {
   currency: string | null;
   note: string | null;
   image_url: string | null;
+  /** Set when this expense confirmed a recurring expense for a month ("yyyy-MM"). */
+  recurring_id?: string | null;
+  recurring_period?: string | null;
   date: string;
   created_at: string;
   updated_at: string;
@@ -46,6 +50,8 @@ export interface ExpenseInput {
   custom_category_id?: string | null;
   note?: string | null;
   image_url?: string | null;
+  recurring_id?: string | null;
+  recurring_period?: string | null;
   date: string;
 }
 
@@ -233,6 +239,8 @@ export async function deleteCategory(id: string, moveTo: string | null, rows: Cu
   await ensureBuiltinRows([id], rows);
   const { data, error } = await supabase.rpc("delete_category", { p_category: id, p_move_to: moveTo });
   if (error) throw error;
+  // Recurring expenses follow their expenses to the new category.
+  if (moveTo) await supabase.from("recurring_expenses").update({ category: moveTo }).eq("category", id);
   return data ?? 0;
 }
 
@@ -265,4 +273,47 @@ export async function clearExpenseData(): Promise<number> {
   if (error) throw error;
   await deleteReceipts(user.id);
   return count ?? 0;
+}
+
+// ── Recurring expenses ──────────────────────────────────────────────
+
+export async function getRecurringExpenses() {
+  const { data, error } = await supabase.from("recurring_expenses").select("*").order("day_of_month").order("title");
+  if (error) throw error;
+  return (data ?? []).map((r) => ({ ...r, amount: Number(r.amount) })) as RecurringExpense[];
+}
+
+/** Expenses that confirmed a bill, from `since` on ("yyyy-MM"): which months are done, and the last amounts. */
+export async function getConfirmations(since: string) {
+  const { data, error } = await supabase
+    .from("expenses")
+    .select("id, recurring_id, recurring_period, amount, date")
+    .not("recurring_id", "is", null)
+    .gte("recurring_period", since);
+  if (error) throw error;
+  return (data ?? []).map((r) => ({ ...r, amount: Number(r.amount) })) as Confirmation[];
+}
+
+/** New bills count from the start of this month, so one already paid this month can be confirmed. */
+export async function createRecurringExpense(input: RecurringInput, startsOn: string) {
+  const userId = await requireUserId();
+  const { data, error } = await supabase
+    .from("recurring_expenses")
+    .insert({ ...input, user_id: userId, starts_on: startsOn })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as RecurringExpense;
+}
+
+export async function updateRecurringExpense(id: string, patch: Partial<RecurringInput> & { skipped?: string[] }) {
+  const { data, error } = await supabase.from("recurring_expenses").update(patch).eq("id", id).select().single();
+  if (error) throw error;
+  return data as RecurringExpense;
+}
+
+/** Deletes the bill. The expenses it created stay. */
+export async function deleteRecurringExpense(id: string) {
+  const { error } = await supabase.from("recurring_expenses").delete().eq("id", id);
+  if (error) throw error;
 }

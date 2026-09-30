@@ -9,10 +9,11 @@ import StoredImage from "@/components/StoredImage";
 import { uploadImage } from "@/lib/storage";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { CURRENCIES } from "@/lib/currencies";
+import { CURRENCIES, formatMoney } from "@/lib/currencies";
 import { useProfile, useSettings, useUpdateProfile, useUpdateSettings } from "@/hooks/useProfile";
 import type { DefaultScope, Settings, WeekendRule } from "@/lib/settings";
-import { expenseKeys, useCustomCategories } from "@/hooks/useExpenses";
+import { expenseKeys, useCustomCategories, useRecurringExpenses } from "@/hooks/useExpenses";
+import { monthlyTotal } from "@/lib/recurring";
 import { useQueryClient } from "@tanstack/react-query";
 import { clearExpenseData } from "@/lib/expenses";
 import {
@@ -70,6 +71,7 @@ const Profile = () => {
   const updateSettings = useUpdateSettings();
   const { data: customCategories = [] } = useCustomCategories();
   const categories = allCategories(customCategories);
+  const { data: recurring = [] } = useRecurringExpenses();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -344,6 +346,26 @@ const Profile = () => {
               <span className="w-8 h-8 rounded-lg bg-muted text-muted-foreground text-[11px] font-medium flex items-center justify-center">+{categories.length - 7}</span>
             )}
           </div>
+        </div>
+        <CaretRight size={18} weight="bold" className="text-muted-foreground shrink-0" />
+      </motion.button>
+
+      {/* Recurring expenses */}
+      <motion.button
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.12 }}
+        onClick={() => navigate("/recurring")}
+        data-testid="manage-recurring"
+        className="glass-card p-4 mb-4 w-full flex items-center gap-3 text-left hover:bg-card/80 transition-colors"
+      >
+        <div className="flex-1 min-w-0">
+          <h3 className="font-display font-bold text-foreground text-sm">Recurring expenses</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {recurring.length === 0
+              ? "Rent, utilities, subscriptions: set up once, confirm each month"
+              : `${recurring.filter((b) => b.active).length} active · ${formatMoney(monthlyTotal(recurring, settings.currency), settings.currency)} a month`}
+          </p>
         </div>
         <CaretRight size={18} weight="bold" className="text-muted-foreground shrink-0" />
       </motion.button>

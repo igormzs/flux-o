@@ -128,6 +128,7 @@ function withDefaults(table: string, row: Row): Row {
     ...(table === "profiles" ? {} : { user_id: DEMO_USER.id }),
     created_at: now,
     ...(table === "expenses" ? { updated_at: now } : {}),
+    ...(table === "recurring_expenses" ? { active: true, skipped: [], currency: null } : {}),
     ...row,
   };
 }

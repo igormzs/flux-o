@@ -5,6 +5,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import StoredImage from "@/components/StoredImage";
 import { Expense } from "@/lib/expenses";
 import BalanceCard from "@/components/BalanceCard";
+import BillsDueCard from "@/components/bills/BillsDueCard";
 import TransactionCard from "@/components/TransactionCard";
 import SpendingChart from "@/components/SpendingChart";
 import AddExpenseSheet from "@/components/AddExpenseSheet";
@@ -111,6 +112,7 @@ const Dashboard = () => {
             currency={mainCurrency}
             otherCurrencies={cycleSplit.others}
           />
+          <BillsDueCard mainCurrency={mainCurrency} cycle={cycle} />
           <SpendingChart
             expenses={chartExpenses}
             customCategories={customCategories}

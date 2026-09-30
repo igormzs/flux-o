@@ -35,7 +35,7 @@ const CategoryPicker = ({ value, categories, onChange, invalid, label }: Categor
           <CaretDown size={12} weight="bold" className="shrink-0 opacity-60" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-72 p-2 bg-card border-glass-border">
+      <PopoverContent align="start" className="w-72 p-2 bg-card border-glass-border z-[70]">
         <div role="radiogroup" aria-label={label} className="grid grid-cols-4 gap-1.5 max-h-64 overflow-y-auto scrollbar-none">
           {categories.map((c) => (
             <button

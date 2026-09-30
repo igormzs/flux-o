@@ -18,7 +18,14 @@ import {
   saveExpense,
   updateExpense,
   type ExpenseInput,
+  createRecurringExpense,
+  deleteRecurringExpense,
+  getConfirmations,
+  getRecurringExpenses,
+  updateRecurringExpense,
 } from "@/lib/expenses";
+import { addMonths, format, startOfMonth } from "date-fns";
+import { periodKey, type RecurringInput } from "@/lib/recurring";
 import type { DateRange } from "@/lib/date-utils";
 import { DEFAULT_CATEGORIES, isBuiltinKey, nextSortOrder } from "@/lib/categories";
 
@@ -127,5 +134,35 @@ export const useExpenseMutations = () => {
     remove: useMutation({ mutationFn: (id: string) => deleteExpense(id), onSuccess }),
     saveMany: useMutation({ mutationFn: (inputs: ExpenseInput[]) => saveExpenses(inputs), onSuccess }),
     removeMany: useMutation({ mutationFn: (ids: string[]) => deleteExpenses(ids), onSuccess }),
+  };
+};
+
+export const recurringKeys = { all: ["recurring_expenses"] as const };
+
+export const useRecurringExpenses = () => useQuery({ queryKey: recurringKeys.all, queryFn: getRecurringExpenses });
+
+/**
+ * Which bills are already confirmed (last month onward) and the latest
+ * amounts (six months back). Under the "expenses" key, so it refreshes when
+ * any expense is saved or deleted.
+ */
+export const useConfirmations = () => {
+  const since = periodKey(addMonths(new Date(), -6));
+  return useQuery({ queryKey: [...expenseKeys.all, "confirmations", since], queryFn: () => getConfirmations(since) });
+};
+
+export const useRecurringMutations = () => {
+  const queryClient = useQueryClient();
+  const onSuccess = () => queryClient.invalidateQueries({ queryKey: recurringKeys.all });
+  return {
+    create: useMutation({
+      mutationFn: (input: RecurringInput) => createRecurringExpense(input, format(startOfMonth(new Date()), "yyyy-MM-dd")),
+      onSuccess,
+    }),
+    update: useMutation({
+      mutationFn: ({ id, patch }: { id: string; patch: Partial<RecurringInput> & { skipped?: string[] } }) => updateRecurringExpense(id, patch),
+      onSuccess,
+    }),
+    remove: useMutation({ mutationFn: (id: string) => deleteRecurringExpense(id), onSuccess }),
   };
 };
