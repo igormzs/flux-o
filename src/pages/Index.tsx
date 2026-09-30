@@ -19,6 +19,8 @@ import { useCustomCategories, useExpenseMutations, useExpenses, useRecentExpense
 import { displayNameOf, initialsOf, useProfile, useSettings } from "@/hooks/useProfile";
 import { Link } from "react-router-dom";
 import { splitByCurrency, sumAmounts } from "@/lib/currencies";
+import { useBills } from "@/hooks/useBills";
+import { stillToCome } from "@/lib/recurring";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -62,6 +64,7 @@ const Dashboard = () => {
   const { data: prevWeekExpenses = [] } = useExpenses(prevWeek);
   const { data: chartExpenses = [] } = useExpenses(chartRange);
 
+  const bills = useBills(mainCurrency);
   const cycleSplit = splitByCurrency(cycleExpenses, mainCurrency);
   const cycleTotal = sumAmounts(cycleSplit.main);
   const currentWeekTotal = sumAmounts(splitByCurrency(currentWeekExpenses, mainCurrency).main);
@@ -111,6 +114,8 @@ const Dashboard = () => {
             prevWeekTotal={prevWeekTotal}
             currency={mainCurrency}
             otherCurrencies={cycleSplit.others}
+            budgetGoal={settings.budgetGoal}
+            toCome={stillToCome(bills.all, cycle, mainCurrency).total}
           />
           <BillsDueCard mainCurrency={mainCurrency} cycle={cycle} />
           <SpendingChart

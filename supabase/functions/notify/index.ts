@@ -4,8 +4,9 @@
  * POST, called two ways:
  *  - By the hourly schedule (pg_cron), with the `x-cron-secret` header: sends
  *    the Monday weekly report to everyone it's due for (9:00 in their time
- *    zone), once per week, and the catch-up reminder (19:00, after 3 and 7
- *    days without logging).
+ *    zone), once per week; the catch-up reminder (19:00, after 3 and 7 days
+ *    without logging); and the budget alert (over the goal, or about to be
+ *    with recurring expenses still to come; once each per pay cycle).
  *  - By the app, signed in, with {"type":"test"}: sends the signed-in user a
  *    preview of their weekly report on every device they turned on.
  *
@@ -15,8 +16,9 @@
  */
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { sendPush, type VapidKeys } from "../_shared/webpush.ts";
-import { isReportDue, reportWeek, safeTimeZone, weeklyMessage, weekTotals } from "../_shared/weekly.ts";
+import { isReportDue, localMidnight, localParts, reportWeek, safeTimeZone, weeklyMessage, weekTotals } from "../_shared/weekly.ts";
 import { catchUpReminder } from "../_shared/reminder.ts";
+import { budgetAlert, cycleRange, isAlertHour, recurringToCome } from "../_shared/budget.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -32,7 +34,17 @@ const vapid: VapidKeys = {
   subject: Deno.env.get("VAPID_SUBJECT") ?? "https://flux-o.vercel.app",
 };
 
-interface Profile { id: string; currency: string | null; notifications: { weeklyReport?: boolean; dailyReminder?: boolean } | null; timezone: string | null }
+interface Profile {
+  id: string;
+  currency: string | null;
+  notifications: { weeklyReport?: boolean; dailyReminder?: boolean; budgetAlert?: boolean } | null;
+  timezone: string | null;
+  budget_goal: number | string | null;
+  billing_cycle_day: number | null;
+  payday_weekend_rule: string | null;
+  cycle_start_overrides: Record<string, string> | null;
+}
+const PROFILE_COLUMNS = "id, currency, notifications, timezone, budget_goal, billing_cycle_day, payday_weekend_rule, cycle_start_overrides";
 interface Subscription { id: string; user_id: string; endpoint: string; p256dh: string; auth: string }
 
 /** The report for the last finished week, for one user. */
@@ -48,6 +60,35 @@ async function buildReport(db: SupabaseClient, profile: Profile, now: Date) {
   if (error) throw error;
   const message = weeklyMessage(weekTotals(expenses ?? [], week, currency, custom ?? []), currency);
   return { ...message, week, url: `/insights?scope=week&at=${week.key}` };
+}
+
+/** The budget alert due for one user right now, or null. */
+async function buildBudgetAlert(db: SupabaseClient, profile: Profile, now: Date) {
+  const goal = Number(profile.budget_goal ?? 0);
+  if (!(goal > 0)) return null;
+  const tz = safeTimeZone(profile.timezone);
+  const local = localParts(now, tz);
+  if (!isAlertHour(local.hour)) return null;
+  const currency = profile.currency ?? "EUR";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const today = `${local.year}-${pad(local.month)}-${pad(local.day)}`;
+  const range = cycleRange(today, {
+    cycleDay: profile.billing_cycle_day ?? 25,
+    weekendRule: profile.payday_weekend_rule,
+    overrides: profile.cycle_start_overrides,
+  });
+  const instant = (ymd: string) => { const [y, m, d] = ymd.split("-").map(Number); return localMidnight(y, m, d, tz).toISOString(); };
+  // Confirmations from six months back give the last amount paid for each bill.
+  const since = new Date(Date.UTC(local.year, local.month - 7, 1)).toISOString().slice(0, 7);
+  const [{ data: expenses, error }, { data: bills }, { data: confirmed }] = await Promise.all([
+    db.from("expenses").select("amount, currency").eq("user_id", profile.id).gte("date", instant(range.start)).lt("date", instant(range.end)),
+    db.from("recurring_expenses").select("id, amount, currency, day_of_month, active, starts_on, skipped").eq("user_id", profile.id),
+    db.from("expenses").select("recurring_id, recurring_period, amount").eq("user_id", profile.id).not("recurring_id", "is", null).gte("recurring_period", since),
+  ]);
+  if (error) throw error;
+  const spent = (expenses ?? []).filter((e) => (e.currency ?? currency) === currency).reduce((sum, e) => sum + Number(e.amount), 0);
+  const toCome = recurringToCome(bills ?? [], confirmed ?? [], range, currency);
+  return budgetAlert({ goal, spent, toCome, cycleStart: range.start, currency });
 }
 
 /** Send to every device of one user; removes devices the push service says are gone. */
@@ -91,7 +132,7 @@ async function deliver(db: SupabaseClient, subs: Subscription[], userId: string,
   return { user: userId, kind, ...out };
 }
 
-/** The hourly run: the Monday weekly report and the catch-up reminder, for everyone they're due for. */
+/** The hourly run: the weekly report, the budget alert and the catch-up reminder, for everyone they're due for. */
 async function runScheduled(db: SupabaseClient, now: Date) {
   const { data: subs, error } = await db.from("push_subscriptions").select("id, user_id, endpoint, p256dh, auth");
   if (error) throw error;
@@ -99,7 +140,7 @@ async function runScheduled(db: SupabaseClient, now: Date) {
   for (const s of subs ?? []) byUser.set(s.user_id, [...(byUser.get(s.user_id) ?? []), s]);
   if (byUser.size === 0) return { users: 0 };
 
-  const { data: profiles, error: pErr } = await db.from("profiles").select("id, currency, notifications, timezone").in("id", [...byUser.keys()]);
+  const { data: profiles, error: pErr } = await db.from("profiles").select(PROFILE_COLUMNS).in("id", [...byUser.keys()]);
   if (pErr) throw pErr;
   const results: Record<string, unknown>[] = [];
   for (const profile of (profiles ?? []) as Profile[]) {
@@ -112,6 +153,14 @@ async function runScheduled(db: SupabaseClient, now: Date) {
       if (await claim(db, profile.id, "weekly", report.week.key)) {
         results.push(await deliver(db, devices, profile.id, "weekly", report.week.key,
           { title: report.title, body: report.body, url: report.url, tag: `weekly-${report.week.key}` }));
+      }
+    }
+
+    if (profile.notifications?.budgetAlert) {
+      const alert = await buildBudgetAlert(db, profile, now);
+      if (alert && await claim(db, profile.id, "budget", alert.key)) {
+        results.push(await deliver(db, devices, profile.id, "budget", alert.key,
+          { title: alert.title, body: alert.body, url: alert.url, tag: "budget" }));
       }
     }
 
@@ -155,7 +204,7 @@ Deno.serve(async (req) => {
 
   const { data: subs } = await db.from("push_subscriptions").select("id, user_id, endpoint, p256dh, auth").eq("user_id", user.id);
   if (!subs?.length) return json({ sent: 0, removed: 0, failed: 0, devices: 0 });
-  const { data: profile } = await db.from("profiles").select("id, currency, notifications, timezone").eq("id", user.id).single();
+  const { data: profile } = await db.from("profiles").select(PROFILE_COLUMNS).eq("id", user.id).single();
   const report = await buildReport(db, profile as Profile, now);
   const out = await sendToUser(db, subs, { title: `Preview · ${report.title}`, body: report.body, url: report.url, tag: "test" });
   return json({ ...out, devices: subs.length });

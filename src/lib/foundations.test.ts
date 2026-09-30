@@ -74,7 +74,8 @@ describe("settings", () => {
     }));
     expect(readLegacySettings()).toEqual({
       budgetGoal: 1500, currency: "BRL", defaultScope: "cycle", cycleDay: 25,
-      notifications: { overBudget: false, weeklyReport: true, dailyReminder: false },
+      // The budget alert didn't exist in v1, so it starts off.
+      notifications: { overBudget: false, weeklyReport: true, dailyReminder: false, budgetAlert: false },
     });
   });
 

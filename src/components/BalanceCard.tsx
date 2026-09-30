@@ -11,9 +11,48 @@ interface BalanceCardProps {
   currency: string;
   /** Totals in currencies other than `currency`, shown separately. */
   otherCurrencies?: Record<string, number>;
+  /** The budget goal for the cycle; 0 hides the budget bar. */
+  budgetGoal?: number;
+  /** Recurring expenses not confirmed yet this cycle. */
+  toCome?: number;
 }
 
-const BalanceCard = ({ cycleTotal, currentWeekTotal, prevWeekTotal, currency, otherCurrencies = {} }: BalanceCardProps) => {
+/** Spending against the goal, with recurring expenses still to come shown as a lighter segment. */
+const BudgetBar = ({ spent, goal, toCome, currency }: { spent: number; goal: number; toCome: number; currency: string }) => {
+  const over = spent > goal;
+  const willGoOver = !over && spent + toCome > goal;
+  const scale = Math.max(goal, spent + toCome);
+  const pct = (n: number) => `${(n / scale) * 100}%`;
+  return (
+    <div className="mt-5" data-testid="budget-bar">
+      <div
+        role="progressbar"
+        aria-label="Budget used"
+        aria-valuemin={0}
+        aria-valuemax={goal}
+        aria-valuenow={Math.round(Math.min(spent, goal))}
+        className="relative h-2 rounded-full bg-muted overflow-hidden flex"
+      >
+        <div style={{ width: pct(spent) }} className={over ? "bg-coral" : "bg-primary"} />
+        <div style={{ width: pct(toCome) }} className={over || willGoOver ? "bg-coral/40" : "bg-primary/35"} />
+        {scale > goal && <div style={{ left: pct(goal) }} className="absolute inset-y-0 w-0.5 bg-foreground/70" aria-hidden />}
+      </div>
+      <p className={cn("text-xs mt-2 font-body", over ? "text-coral font-medium" : "text-muted-foreground")}>
+        {over
+          ? `${formatMoney(spent - goal, currency)} over your ${formatMoney(goal, currency)} goal`
+          : `${formatMoney(goal - spent, currency)} left of your ${formatMoney(goal, currency)} goal`}
+        {toCome > 0 && ` · ${formatMoney(toCome, currency)} recurring to come`}
+      </p>
+      {willGoOver && (
+        <p className="text-xs mt-1 font-body font-medium text-coral">
+          On track to go {formatMoney(spent + toCome - goal, currency)} over
+        </p>
+      )}
+    </div>
+  );
+};
+
+const BalanceCard = ({ cycleTotal, currentWeekTotal, prevWeekTotal, currency, otherCurrencies = {}, budgetGoal = 0, toCome = 0 }: BalanceCardProps) => {
   const diff = currentWeekTotal - prevWeekTotal;
   const isSpendingLower = diff <= 0;
   const percentage = prevWeekTotal > 0 
@@ -39,6 +78,7 @@ const BalanceCard = ({ cycleTotal, currentWeekTotal, prevWeekTotal, currency, ot
             {formatMoney(cycleTotal, currency)}
           </h1>
           <OtherCurrenciesNote totals={otherCurrencies} className="mt-2" />
+          {budgetGoal > 0 && <BudgetBar spent={cycleTotal} goal={budgetGoal} toCome={toCome} currency={currency} />}
         </div>
 
         <div className="pt-6 border-t border-glass-border/50">

@@ -10,9 +10,13 @@ export type DefaultScope = Exclude<Scope, "custom" | "year">;
 export type WeekendRule = NonNullable<PaydayOptions["weekendRule"]>;
 
 export interface NotificationSettings {
+  /** v1's switch, never used for sending. Kept so stored settings still parse. */
   overBudget: boolean;
   weeklyReport: boolean;
+  /** The catch-up reminder (after 3 and 7 days without logging). */
   dailyReminder: boolean;
+  /** Alert when over the budget goal, or about to be. Off until switched on. */
+  budgetAlert: boolean;
 }
 
 /**
@@ -38,7 +42,7 @@ export const DEFAULT_SETTINGS: Settings = {
   cycleDay: DEFAULT_CYCLE_DAY,
   defaultScope: "cycle",
   weekStartsOn: DEFAULT_WEEK_STARTS_ON,
-  notifications: { overBudget: true, weeklyReport: false, dailyReminder: false },
+  notifications: { overBudget: true, weeklyReport: false, dailyReminder: false, budgetAlert: false },
   weekendRule: "none",
   cycleOverrides: {},
 };

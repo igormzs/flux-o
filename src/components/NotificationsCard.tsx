@@ -40,7 +40,7 @@ const NotificationsCard = () => {
   const [, rerender] = useState(0);
   const notifications = { ...settings.notifications, ...flipped.current };
 
-  const setNotification = (key: "weeklyReport" | "dailyReminder", on: boolean) => {
+  const setNotification = (key: "weeklyReport" | "dailyReminder" | "budgetAlert", on: boolean) => {
     flipped.current = { ...flipped.current, [key]: on };
     rerender((n) => n + 1);
     updateSettings.mutate({ notifications: { ...settings.notifications, ...flipped.current } }, {
@@ -152,14 +152,12 @@ const NotificationsCard = () => {
           </div>
           <Switch checked={notifications.dailyReminder} onCheckedChange={(on) => setNotification("dailyReminder", on)} aria-label="Catch-up reminder" />
         </div>
-        <div className="flex items-center justify-between gap-3 opacity-60">
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-foreground text-sm font-medium">
-              Over budget alert <span className="ml-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground bg-muted rounded px-1.5 py-0.5">Coming soon</span>
-            </p>
-            <p className="text-muted-foreground text-xs">When you go past your monthly goal</p>
+            <p className="text-foreground text-sm font-medium">Budget alert</p>
+            <p className="text-muted-foreground text-xs">When you pass your budget goal, and a heads-up when recurring expenses still to come will take you past it</p>
           </div>
-          <Switch checked={false} disabled aria-label="Over budget alert" />
+          <Switch checked={notifications.budgetAlert} onCheckedChange={(on) => setNotification("budgetAlert", on)} aria-label="Budget alert" />
         </div>
       </div>
     </motion.div>

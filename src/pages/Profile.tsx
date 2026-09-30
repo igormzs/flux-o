@@ -226,7 +226,7 @@ const Profile = () => {
         <div className="space-y-6">
           {/* Monthly Budget */}
           <div>
-            <label className="text-xs text-muted-foreground block mb-2">Monthly Budget Goal</label>
+            <label className="text-xs text-muted-foreground block mb-2">Budget goal</label>
             <div className="flex items-center gap-3 bg-muted rounded-xl px-4 h-11 border border-transparent focus-within:border-primary/20 focus-within:bg-muted/80 transition-all">
               <span className="text-muted-foreground text-lg font-medium">{CURRENCIES.find((c) => c.code === pendingSettings.currency)?.symbol || "$"}</span>
               <Input 
@@ -236,6 +236,7 @@ const Profile = () => {
                 className="bg-transparent border-none text-foreground font-display font-bold text-lg h-full p-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 outline-none" 
               />
             </div>
+            <p className="text-[11px] text-muted-foreground mt-1.5">Counted per pay cycle and shown on Home. Set it to 0 to hide the budget bar.</p>
           </div>
 
           {/* Currency Selector */}

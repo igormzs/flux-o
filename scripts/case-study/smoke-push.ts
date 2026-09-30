@@ -82,7 +82,11 @@ try {
   await card.waitFor();
   await page.waitForFunction(() => !document.querySelector("[data-testid=device-status]")?.textContent?.includes("Checking"));
   ok((await status()).startsWith("Off"), "starts off on this device");
-  ok(await card.getByRole("switch", { name: "Over budget alert" }).isDisabled() && await card.getByText("Coming soon").count() === 1, "over budget alert marked Coming soon");
+  ok(await card.getByText("Coming soon").count() === 0 && await card.getByRole("switch", { name: "Budget alert" }).getAttribute("aria-checked") === "false", "budget alert is a real switch, off until chosen (v1's stored 'on' is ignored)");
+  await card.getByRole("switch", { name: "Budget alert" }).click();
+  await page.waitForFunction(() => document.querySelector('[aria-label="Budget alert"]')?.getAttribute("aria-checked") === "true");
+  await page.waitForTimeout(500);
+  ok((profile.notifications as Record<string, boolean>).budgetAlert === true, "budget alert saved when switched on");
   await card.getByRole("switch", { name: "Catch-up reminder" }).click();
   await page.waitForFunction(() => document.querySelector('[aria-label="Catch-up reminder"]')?.getAttribute("aria-checked") === "true");
   await page.waitForTimeout(500);
@@ -99,7 +103,7 @@ try {
   await page.waitForFunction(() => document.querySelector('[aria-label="Weekly report"]')?.getAttribute("aria-checked") === "true");
   await page.waitForTimeout(500);
   const saved = profile.notifications as Record<string, boolean>;
-  ok(saved.weeklyReport === true && saved.dailyReminder === true, "turning on the device switches the weekly report on, and keeps the reminder on");
+  ok(saved.weeklyReport === true && saved.dailyReminder === true && saved.budgetAlert === true, "turning on the device switches the weekly report on, and keeps the other two on");
 
   // Send a test: real encryption + VAPID through Google, shown by the service worker
   await page.getByRole("button", { name: "Send a test" }).click();

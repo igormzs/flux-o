@@ -53,6 +53,10 @@ try {
   await page.goto("/");
   await page.getByText("Recent Transactions").waitFor();
   ok(await card().count() === 0, "Home shows no recurring card before any are set up");
+  // Budget bar: the demo cycle has $2,240.72 spent against a $2,000 goal
+  const bar = page.getByTestId("budget-bar");
+  ok((await bar.innerText()).includes("$240.72 over your $2,000.00 goal"), `budget bar: over the goal (${(await bar.innerText()).trim()})`);
+  tables.profiles[0].budget_goal = 3000;
 
   // Setting up, from Profile
   await page.goto("/profile");
@@ -82,6 +86,9 @@ try {
   ok(await card().getByText("2 recurring expenses to confirm").isVisible(), "Home: 2 recurring expenses to confirm");
   ok((await page.getByTestId("bills-to-come").innerText()).includes("$830.00"), "…and $830.00 still to come this cycle (Internet is next cycle)");
   ok(await page.getByLabel("Amount for Water").inputValue() === "30.00", "amount pre-filled with the usual one");
+  const barText = (await page.getByTestId("budget-bar").innerText()).replace(/\s+/g, " ");
+  ok(barText.includes("$759.28 left of your $3,000.00 goal · $830.00 recurring to come") && barText.includes("On track to go $70.72 over"),
+    `budget bar with a $3,000 goal: $759.28 left, $830.00 to come, on track to go $70.72 over (${barText.trim()})`);
   const before = tables.expenses.length;
   await page.getByLabel("Amount for Water").fill("31,20");
   await page.getByRole("button", { name: "Confirm Water" }).click();
@@ -105,6 +112,8 @@ try {
   ok(confirmed().length === 2 && confirmed().some((e) => e.title === "Rent" && e.amount === 800 && String(e.date).startsWith("2026-09-01T12:00")) && confirmed().some((e) => e.title === "Water" && e.amount === 31.2),
     "Confirm all adds both in one go, with the edited amount");
   await card().waitFor({ state: "hidden" });
+  const after = (await page.getByTestId("budget-bar").innerText()).replace(/\s+/g, " ");
+  ok(after.includes("$71.92 over your $3,000.00 goal") && !after.includes("to come"), `after confirming: $71.92 over, nothing to come (${after.trim()})`);
   ok(true, "nothing left to confirm or to come this cycle: the card goes away");
   await dismissToasts();
 

@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { b64urlDecode, b64urlEncode, deriveKeys, encryptPayload, vapidAuthorization } from "../../supabase/functions/_shared/webpush";
+import { addDays, format } from "date-fns";
+import { budgetAlert, cycleRange, isAlertHour, recurringToCome, type PaydayRules } from "../../supabase/functions/_shared/budget";
+import { getCycleRange } from "./date-utils";
+import { occurrences, stillToCome } from "./recurring";
 import { catchUpReminder } from "../../supabase/functions/_shared/reminder";
 import { isReportDue, localMidnight, reportWeek, safeTimeZone, weeklyMessage, weekTotals } from "../../supabase/functions/_shared/weekly";
 
@@ -137,5 +141,69 @@ describe("notifications: the catch-up reminder", () => {
   });
   it("never nudges an account with nothing logged yet", () => {
     expect(catchUpReminder(new Date("2026-09-30T19:00:00Z"), tz, null)).toBeNull();
+  });
+});
+
+describe("notifications: the budget alert", () => {
+  const base = { goal: 2000, cycleStart: "2026-09-25", currency: "EUR" };
+  it("stays quiet while spending plus what's to come fits the goal", () => {
+    expect(budgetAlert({ ...base, spent: 1500, toCome: 500 })).toBeNull();
+    expect(budgetAlert({ ...base, spent: 1999, toCome: 0 })).toBeNull();
+    expect(budgetAlert({ ...base, goal: 0, spent: 500, toCome: 0 })).toBeNull();
+  });
+  it("warns ahead when recurring expenses will take the cycle past the goal", () => {
+    expect(budgetAlert({ ...base, spent: 1650, toCome: 420 })).toEqual({
+      stage: "forecast", key: "2026-09-25:forecast", url: "/",
+      title: "On track to go over budget",
+      body: "€1,650.00 spent and €420.00 in recurring expenses still to come: €70.00 over your €2,000.00 goal.",
+    });
+  });
+  it("says so once spending itself has passed the goal", () => {
+    expect(budgetAlert({ ...base, spent: 2130, toCome: 40 })).toEqual({
+      stage: "over", key: "2026-09-25:over", url: "/",
+      title: "Over budget by €130.00",
+      body: "€2,130.00 spent of your €2,000.00 goal this cycle. €40.00 in recurring expenses still to come.",
+    });
+    expect(budgetAlert({ ...base, spent: 2130, toCome: 0 })!.body).toBe("€2,130.00 spent of your €2,000.00 goal this cycle.");
+  });
+  it("only goes out between 9:00 and 21:00", () => {
+    expect([8, 9, 20, 21].map(isAlertHour)).toEqual([false, true, true, false]);
+  });
+
+  it("finds the same pay cycle as the app, every day for two years", () => {
+    const setups: PaydayRules[] = [
+      { cycleDay: 25 },
+      { cycleDay: 1, weekendRule: "after" },
+      { cycleDay: 31, weekendRule: "before" },
+      { cycleDay: 25, weekendRule: "before", overrides: { "2026-09": "2026-09-22", "2027-01": "2027-01-29", "2026-12": "2026-11-01" } },
+    ];
+    for (const rules of setups) {
+      for (let day = new Date(2026, 0, 1); day < new Date(2028, 0, 1); day = addDays(day, 1)) {
+        const app = getCycleRange(day, rules.cycleDay, { weekendRule: (rules.weekendRule ?? "none") as "none", overrides: rules.overrides ?? {} });
+        expect(cycleRange(format(day, "yyyy-MM-dd"), rules)).toEqual({ start: format(app.start, "yyyy-MM-dd"), end: format(app.end, "yyyy-MM-dd") });
+      }
+    }
+  });
+
+  it("adds up the same recurring expenses still to come as the app, day by day", () => {
+    const bill = (id: string, amount: number, day: number, over = {}) => ({
+      id, user_id: "u", title: id, amount, currency: null as string | null, category: "rent", day_of_month: day,
+      active: true, starts_on: "2026-08-01", skipped: [] as string[], created_at: "", ...over,
+    });
+    const bills = [
+      bill("rent", 800, 1), bill("water", 30, 18), bill("gym", 35, 31, { skipped: ["2026-10"] }),
+      bill("vpn", 10, 10, { currency: "USD" }), bill("paused", 99, 5, { active: false }), bill("new", 20, 3, { starts_on: "2026-10-01" }),
+    ];
+    const paid = [
+      { id: "1", recurring_id: "rent", recurring_period: "2026-09", amount: 800, date: "" },
+      { id: "2", recurring_id: "water", recurring_period: "2026-08", amount: 33.15, date: "" },
+      { id: "3", recurring_id: "rent", recurring_period: "2026-10", amount: 820, date: "" },
+    ];
+    for (let day = new Date(2026, 8, 1); day < new Date(2026, 10, 15); day = addDays(day, 1)) {
+      const range = getCycleRange(day, 25);
+      const app = stillToCome(occurrences(bills, paid, day), range, "EUR").total;
+      const server = recurringToCome(bills, paid, { start: format(range.start, "yyyy-MM-dd"), end: format(range.end, "yyyy-MM-dd") }, "EUR");
+      expect([format(day, "yyyy-MM-dd"), server]).toEqual([format(day, "yyyy-MM-dd"), app]);
+    }
   });
 });
