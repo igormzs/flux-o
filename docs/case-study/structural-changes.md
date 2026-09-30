@@ -421,3 +421,36 @@ The same hourly job sends a nudge when nothing has been logged for a while (`_sh
 | Unit tests | 109 | 124 |
 | Browser checks | 89 | 106 (+ push 17, real Chrome) |
 | Main JS (gzip) | 408 KB | 414 KB |
+
+## Recurring expenses
+
+Fixed bills (rent, water, electricity) were re-typed every month. They are now set up once and confirmed when due. Screenshots: `screenshots/v2/recurring/`.
+
+```mermaid
+flowchart LR
+    B[("recurring_expenses<br/>title · usual amount · day · category")] --> O["occurrences()<br/>last, this and next month"]
+    E[("expenses with<br/>recurring_id + recurring_period")] --> O
+    O -- "day has come,<br/>not confirmed or skipped" --> H["Home card<br/>amount pre-filled, editable"]
+    O -- "due or upcoming,<br/>inside the pay cycle" --> T["Still to come this cycle"]
+    H -- "Confirm" --> X["insert expense<br/>(due day, noon, linked)"]
+    H -- "Skip" --> S["skipped += 'yyyy-MM'"]
+    X --> E
+```
+
+| Decision | Why | Trade-off accepted |
+|---|---|---|
+| Confirm, never auto-add | Water and electricity change every month, and an expense that adds itself makes totals wrong without anyone noticing | One tap per bill per month (or Confirm all) |
+| Pre-fill with the last amount paid, then the usual amount | Last month is the best guess for a bill that drifts | The "usual amount" only matters until the first confirmation |
+| The expense carries `recurring_id` and `recurring_period` | "Is October done?" is one lookup, exact even when confirmed early or edited later. A unique index stops a double confirmation | Two columns on `expenses` |
+| Look back one month only | A bill missed at the end of a month is still asked for, but old ones don't pile up | A bill ignored for two months is dropped silently |
+| New bills count from the 1st of the current month | A bill already paid this month can be confirmed right after setting it up | None |
+| Monthly only | Covers rent, utilities and subscriptions | Yearly or weekly bills aren't supported |
+| Deleting a category moves its bills with its expenses | A bill never points at a category that's gone | Done by the app after the database function, not inside it |
+
+### Tests
+
+| | Notifications | Recurring |
+|---|---|---|
+| Unit tests | 124 | 136 |
+| Browser checks | 106 | 134 (+ recurring 28) |
+| Main JS (gzip) | 414 KB | 418 KB (the Recurring screen is a separate 4 KB file) |

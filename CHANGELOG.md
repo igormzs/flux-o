@@ -7,6 +7,14 @@ The story behind each change, with before/after screenshots, is in [docs/case-st
 
 ## [Unreleased]
 
+### Added — Recurring expenses
+- Recurring expenses (Profile → Recurring expenses): rent, utilities and subscriptions set up once with a name, usual amount, day of the month and category. They can be paused or deleted; deleting keeps past expenses.
+- Home shows the ones whose day has come, each with its amount pre-filled from what was paid last time (or the usual amount) and editable. Confirm one, Confirm all, or Skip this month. Nothing is added automatically, and every action has Undo.
+- "Still to come this cycle": the total of recurring expenses not yet confirmed in the current pay cycle.
+- A recurring expense can be confirmed early from its screen; it's dated today and counted for that month.
+- Migration `20261002090000_recurring_expenses.sql`: `recurring_expenses`, plus `expenses.recurring_id` and `recurring_period` (one expense per bill per month).
+- `npm run smoke:recurring`: 28 browser checks.
+
 ### Added — Notifications
 - Push notifications, turned on per device in Profile → Notifications ("Turn on for this device"). Works on iPhone (iOS 16.4+) when Flux-o is on the Home Screen, and in Chrome, Edge and Firefox. In iPhone Safari the card explains how to add Flux-o to the Home Screen first.
 - The weekly report: Mondays at 9:00 in the user's time zone, with last week's total in the main currency, the change from the week before and the top category. Tapping it opens Insights on that week. Sent once per week, and retried the next hour if nothing got through.
