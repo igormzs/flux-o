@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { b64urlDecode, b64urlEncode, deriveKeys, encryptPayload, vapidAuthorization } from "../../supabase/functions/_shared/webpush";
+import { catchUpReminder } from "../../supabase/functions/_shared/reminder";
 import { isReportDue, localMidnight, reportWeek, safeTimeZone, weeklyMessage, weekTotals } from "../../supabase/functions/_shared/weekly";
 
 /** A browser's push keys, like PushSubscription.getKey() returns. */
@@ -103,5 +104,38 @@ describe("notifications: the Monday report", () => {
     expect(safeTimeZone("Mars/Base")).toBe("UTC");
     expect(safeTimeZone(null)).toBe("UTC");
     expect(safeTimeZone("Europe/Lisbon")).toBe("Europe/Lisbon");
+  });
+});
+
+describe("notifications: the catch-up reminder", () => {
+  const tz = "Europe/Lisbon"; // UTC+1 in September
+  const logged = new Date("2026-09-27T20:00:00Z"); // Sunday 21:00 Lisbon
+
+  it("stays quiet for the first two days", () => {
+    expect(catchUpReminder(new Date("2026-09-29T19:00:00Z"), tz, logged)).toBeNull();
+  });
+  it("nudges from 19:00 on the third day without logging", () => {
+    expect(catchUpReminder(new Date("2026-09-30T17:30:00Z"), tz, logged)).toBeNull(); // 18:30
+    expect(catchUpReminder(new Date("2026-09-30T18:00:00Z"), tz, logged)).toEqual({
+      key: "2026-09-27:3", days: 3, title: "Nothing logged for 3 days", url: "/add",
+      body: "Catch up in one go: type or paste your expenses and save them together.",
+    });
+  });
+  it("uses the same key on days 4 to 6, so it's sent once", () => {
+    const r = catchUpReminder(new Date("2026-10-02T19:00:00Z"), tz, logged)!;
+    expect([r.key, r.title]).toEqual(["2026-09-27:3", "Nothing logged for 5 days"]);
+  });
+  it("nudges once more after a week, then the key stops changing", () => {
+    expect(catchUpReminder(new Date("2026-10-04T18:00:00Z"), tz, logged)).toMatchObject({ key: "2026-09-27:7", title: "Nothing logged for a week" });
+    expect(catchUpReminder(new Date("2026-10-20T18:00:00Z"), tz, logged)!.key).toBe("2026-09-27:7");
+  });
+  it("counts days in the user's time zone", () => {
+    // Logged Sunday 23:30 UTC = Monday 00:30 in Lisbon, so Wednesday evening is only day 2.
+    expect(catchUpReminder(new Date("2026-09-30T18:00:00Z"), tz, new Date("2026-09-27T23:30:00Z"))).toBeNull();
+    expect(catchUpReminder(new Date("2026-09-30T18:00:00Z"), "UTC", new Date("2026-09-27T23:30:00Z"))).toBeNull(); // 18:00 UTC: too early
+    expect(catchUpReminder(new Date("2026-09-30T19:00:00Z"), "UTC", new Date("2026-09-27T23:30:00Z"))!.key).toBe("2026-09-27:3");
+  });
+  it("never nudges an account with nothing logged yet", () => {
+    expect(catchUpReminder(new Date("2026-09-30T19:00:00Z"), tz, null)).toBeNull();
   });
 });

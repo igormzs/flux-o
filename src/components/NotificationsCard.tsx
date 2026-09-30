@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { BellRinging, BellSlash, DeviceMobile, Export, PaperPlaneTilt } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { useSettings, useUpdateSettings } from "@/hooks/useProfile";
+import type { Settings } from "@/lib/settings";
 import { currentSubscription, disablePush, enablePush, pushSupport, sendTestNotification, syncPush } from "@/lib/push";
 
 type DeviceState = "loading" | "unsupported" | "needs-home-screen" | "blocked" | "off" | "on";
@@ -33,10 +34,23 @@ const NotificationsCard = () => {
     });
   }, []);
 
-  const setWeekly = (weeklyReport: boolean) =>
-    updateSettings.mutate({ notifications: { ...settings.notifications, weeklyReport } }, {
-      onError: (err) => toast.error(`Couldn't save: ${err.message}`),
+  // Switches flipped here but not yet confirmed by the server. Every save
+  // includes all of them, so two quick taps can't undo each other.
+  const flipped = useRef<Partial<Settings["notifications"]>>({});
+  const [, rerender] = useState(0);
+  const notifications = { ...settings.notifications, ...flipped.current };
+
+  const setNotification = (key: "weeklyReport" | "dailyReminder", on: boolean) => {
+    flipped.current = { ...flipped.current, [key]: on };
+    rerender((n) => n + 1);
+    updateSettings.mutate({ notifications: { ...settings.notifications, ...flipped.current } }, {
+      onError: (err) => {
+        delete flipped.current[key];
+        rerender((n) => n + 1);
+        toast.error(`Couldn't save: ${err.message}`);
+      },
     });
+  };
 
   const turnOn = async () => {
     setBusy(true);
@@ -44,7 +58,7 @@ const NotificationsCard = () => {
       const permission = await enablePush();
       if (permission === "granted") {
         setDevice("on");
-        if (!settings.notifications.weeklyReport) setWeekly(true);
+        if (!notifications.weeklyReport) setNotification("weeklyReport", true);
         toast.success("Notifications are on for this device");
       } else {
         setDevice(permission === "denied" ? "blocked" : "off");
@@ -94,7 +108,7 @@ const NotificationsCard = () => {
             <p className="text-muted-foreground text-xs" data-testid="device-status">
               {device === "loading" && "Checking…"}
               {device === "on" && "On. Notifications arrive here, even when Flux-o is closed."}
-              {device === "off" && "Off. Turn them on to get the weekly report here."}
+              {device === "off" && "Off. Turn them on to get the weekly report and reminders here."}
               {device === "blocked" && "Blocked. Allow notifications for Flux-o in your phone or browser settings, then come back."}
               {device === "unsupported" && "This browser can't show notifications."}
               {device === "needs-home-screen" && (
@@ -129,22 +143,24 @@ const NotificationsCard = () => {
             <p className="text-foreground text-sm font-medium">Weekly report</p>
             <p className="text-muted-foreground text-xs">Mondays at 9:00: last week’s total, the change and your top category</p>
           </div>
-          <Switch checked={settings.notifications.weeklyReport} onCheckedChange={setWeekly} aria-label="Weekly report" />
+          <Switch checked={notifications.weeklyReport} onCheckedChange={(on) => setNotification("weeklyReport", on)} aria-label="Weekly report" />
         </div>
-        {[
-          { label: "Over budget alert", desc: "When you go past your monthly goal" },
-          { label: "Daily reminder", desc: "On days you haven’t logged anything" },
-        ].map((item) => (
-          <div key={item.label} className="flex items-center justify-between gap-3 opacity-60">
-            <div>
-              <p className="text-foreground text-sm font-medium">
-                {item.label} <span className="ml-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground bg-muted rounded px-1.5 py-0.5">Coming soon</span>
-              </p>
-              <p className="text-muted-foreground text-xs">{item.desc}</p>
-            </div>
-            <Switch checked={false} disabled aria-label={item.label} />
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-foreground text-sm font-medium">Catch-up reminder</p>
+            <p className="text-muted-foreground text-xs">Around 19:00 when nothing’s been logged for 3 days, and once more after a week</p>
           </div>
-        ))}
+          <Switch checked={notifications.dailyReminder} onCheckedChange={(on) => setNotification("dailyReminder", on)} aria-label="Catch-up reminder" />
+        </div>
+        <div className="flex items-center justify-between gap-3 opacity-60">
+          <div>
+            <p className="text-foreground text-sm font-medium">
+              Over budget alert <span className="ml-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground bg-muted rounded px-1.5 py-0.5">Coming soon</span>
+            </p>
+            <p className="text-muted-foreground text-xs">When you go past your monthly goal</p>
+          </div>
+          <Switch checked={false} disabled aria-label="Over budget alert" />
+        </div>
       </div>
     </motion.div>
   );

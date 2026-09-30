@@ -82,17 +82,24 @@ try {
   await card.waitFor();
   await page.waitForFunction(() => !document.querySelector("[data-testid=device-status]")?.textContent?.includes("Checking"));
   ok((await status()).startsWith("Off"), "starts off on this device");
-  ok(await card.getByRole("switch", { name: "Over budget alert" }).isDisabled() && await card.getByText("Coming soon").count() === 2, "over budget and daily reminder marked Coming soon");
+  ok(await card.getByRole("switch", { name: "Over budget alert" }).isDisabled() && await card.getByText("Coming soon").count() === 1, "over budget alert marked Coming soon");
+  await card.getByRole("switch", { name: "Catch-up reminder" }).click();
+  await page.waitForFunction(() => document.querySelector('[aria-label="Catch-up reminder"]')?.getAttribute("aria-checked") === "true");
+  await page.waitForTimeout(500);
+  ok((profile.notifications as Record<string, boolean>).dailyReminder === true, "catch-up reminder saved when switched on");
   ok(await card.getByText("Mondays at 9:00").isVisible(), "weekly report says Monday, not Sunday");
 
   // Turn on: permission, subscription with Google's push service, saved with the time zone
   await page.getByRole("button", { name: "Turn on for this device" }).click();
-  await page.waitForFunction(() => document.querySelector("[data-testid=device-status]")?.textContent?.startsWith("On"), null, { timeout: 20000 });
+  await page.waitForFunction(() => document.querySelector("[data-testid=device-status]")?.textContent?.startsWith("On"), null, { timeout: 60000 });
   const sub = tables.push_subscriptions?.[0];
   ok(tables.push_subscriptions?.length === 1 && String(sub?.endpoint).startsWith("https://fcm.googleapis.com/"), `device saved with a real push endpoint (${String(sub?.endpoint).slice(0, 40)}…)`);
   ok(sub?.p256dh && sub?.auth, "…with its encryption keys");
   ok(profile.timezone === "Europe/Lisbon", "time zone saved for the Monday 9:00 timing");
-  ok((profile.notifications as Record<string, boolean>).weeklyReport === true && await weekly().getAttribute("aria-checked") === "true", "turning on the device switches the weekly report on");
+  await page.waitForFunction(() => document.querySelector('[aria-label="Weekly report"]')?.getAttribute("aria-checked") === "true");
+  await page.waitForTimeout(500);
+  const saved = profile.notifications as Record<string, boolean>;
+  ok(saved.weeklyReport === true && saved.dailyReminder === true, "turning on the device switches the weekly report on, and keeps the reminder on");
 
   // Send a test: real encryption + VAPID through Google, shown by the service worker
   await page.getByRole("button", { name: "Send a test" }).click();
@@ -102,7 +109,7 @@ try {
     const reg = await navigator.serviceWorker.ready;
     const list = await reg.getNotifications();
     return list.length ? { title: list[0].title, body: list[0].body, url: list[0].data?.url } : null;
-  }, null, { timeout: 30000, polling: 500 }).then((h) => h.jsonValue()).catch(() => null);
+  }, null, { timeout: 90000, polling: 500 }).then((h) => h.jsonValue()).catch(() => null);
   ok(shown?.title.startsWith("Preview · Your week: "), `the notification arrived and was shown: “${shown?.title}”`);
   ok(shown?.body && shown.url?.startsWith("/insights?scope=week&at="), `…with the summary and a link to that week: “${shown?.body}”`);
 

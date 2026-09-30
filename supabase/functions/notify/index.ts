@@ -4,7 +4,8 @@
  * POST, called two ways:
  *  - By the hourly schedule (pg_cron), with the `x-cron-secret` header: sends
  *    the Monday weekly report to everyone it's due for (9:00 in their time
- *    zone), once per week.
+ *    zone), once per week, and the catch-up reminder (19:00, after 3 and 7
+ *    days without logging).
  *  - By the app, signed in, with {"type":"test"}: sends the signed-in user a
  *    preview of their weekly report on every device they turned on.
  *
@@ -15,6 +16,7 @@
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { sendPush, type VapidKeys } from "../_shared/webpush.ts";
 import { isReportDue, reportWeek, safeTimeZone, weeklyMessage, weekTotals } from "../_shared/weekly.ts";
+import { catchUpReminder } from "../_shared/reminder.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -30,7 +32,7 @@ const vapid: VapidKeys = {
   subject: Deno.env.get("VAPID_SUBJECT") ?? "https://flux-o.vercel.app",
 };
 
-interface Profile { id: string; currency: string | null; notifications: { weeklyReport?: boolean } | null; timezone: string | null }
+interface Profile { id: string; currency: string | null; notifications: { weeklyReport?: boolean; dailyReminder?: boolean } | null; timezone: string | null }
 interface Subscription { id: string; user_id: string; endpoint: string; p256dh: string; auth: string }
 
 /** The report for the last finished week, for one user. */
@@ -72,7 +74,25 @@ async function sendToUser(db: SupabaseClient, subs: Subscription[], payload: Rec
   return { sent, removed, failed };
 }
 
-async function runWeekly(db: SupabaseClient, now: Date) {
+/** Record that a notification is being sent. False if it already was (another run got there first). */
+async function claim(db: SupabaseClient, userId: string, kind: string, key: string): Promise<boolean> {
+  const { data } = await db.from("notification_log")
+    .upsert({ user_id: userId, kind, period_key: key }, { onConflict: "user_id,kind,period_key", ignoreDuplicates: true })
+    .select();
+  return !!data?.length;
+}
+
+/** Send a claimed notification; if nothing got through (and the devices aren't gone), let the next hour retry. */
+async function deliver(db: SupabaseClient, subs: Subscription[], userId: string, kind: string, key: string, payload: Record<string, unknown>) {
+  const out = await sendToUser(db, subs, payload);
+  if (out.sent === 0 && out.failed > 0) {
+    await db.from("notification_log").delete().match({ user_id: userId, kind, period_key: key });
+  }
+  return { user: userId, kind, ...out };
+}
+
+/** The hourly run: the Monday weekly report and the catch-up reminder, for everyone they're due for. */
+async function runScheduled(db: SupabaseClient, now: Date) {
   const { data: subs, error } = await db.from("push_subscriptions").select("id, user_id, endpoint, p256dh, auth");
   if (error) throw error;
   const byUser = new Map<string, Subscription[]>();
@@ -83,23 +103,29 @@ async function runWeekly(db: SupabaseClient, now: Date) {
   if (pErr) throw pErr;
   const results: Record<string, unknown>[] = [];
   for (const profile of (profiles ?? []) as Profile[]) {
-    if (!profile.notifications?.weeklyReport) continue;
     const tz = safeTimeZone(profile.timezone);
-    if (!isReportDue(now, tz)) continue;
-    const report = await buildReport(db, profile, now);
-    // Claim this week's report first, so overlapping runs never send it twice.
-    const { data: claimed } = await db.from("notification_log")
-      .upsert({ user_id: profile.id, kind: "weekly", period_key: report.week.key }, { onConflict: "user_id,kind,period_key", ignoreDuplicates: true })
-      .select();
-    if (!claimed?.length) continue;
-    const out = await sendToUser(db, byUser.get(profile.id)!, { title: report.title, body: report.body, url: report.url, tag: `weekly-${report.week.key}` });
-    // Nothing got through (and not because the devices are gone): try again next hour.
-    if (out.sent === 0 && out.failed > 0) {
-      await db.from("notification_log").delete().match({ user_id: profile.id, kind: "weekly", period_key: report.week.key });
+    const devices = byUser.get(profile.id)!;
+
+    if (profile.notifications?.weeklyReport && isReportDue(now, tz)) {
+      const report = await buildReport(db, profile, now);
+      // Claim first, so overlapping runs never send it twice.
+      if (await claim(db, profile.id, "weekly", report.week.key)) {
+        results.push(await deliver(db, devices, profile.id, "weekly", report.week.key,
+          { title: report.title, body: report.body, url: report.url, tag: `weekly-${report.week.key}` }));
+      }
     }
-    results.push({ user: profile.id, ...out });
+
+    if (profile.notifications?.dailyReminder) {
+      const { data: last } = await db.from("expenses").select("created_at")
+        .eq("user_id", profile.id).order("created_at", { ascending: false }).limit(1);
+      const reminder = catchUpReminder(now, tz, last?.[0] ? new Date(last[0].created_at) : null);
+      if (reminder && await claim(db, profile.id, "catchup", reminder.key)) {
+        results.push(await deliver(db, devices, profile.id, "catchup", reminder.key,
+          { title: reminder.title, body: reminder.body, url: reminder.url, tag: "catchup" }));
+      }
+    }
   }
-  return { users: results.length, results };
+  return { users: byUser.size, sent: results.length, results };
 }
 
 Deno.serve(async (req) => {
@@ -113,7 +139,7 @@ Deno.serve(async (req) => {
   const cronSecret = Deno.env.get("NOTIFY_CRON_SECRET");
   if (cronSecret && req.headers.get("x-cron-secret") === cronSecret) {
     try {
-      return json(await runWeekly(db, now));
+      return json(await runScheduled(db, now));
     } catch (err) {
       console.error(err);
       return json({ error: String(err) }, 500);
