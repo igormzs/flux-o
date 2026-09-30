@@ -140,6 +140,8 @@ export async function installMockSupabase(
   context: BrowserContext,
   tables: Tables,
   rpc: Record<string, RpcHandler> = {},
+  /** Edge Functions by name: called with the JSON body, return the JSON response. */
+  functions: Record<string, (body: Row) => Promise<unknown>> = {},
 ) {
   const json = (route: Route, status: number, body: unknown, headers: Record<string, string> = {}) =>
     route.fulfill({
@@ -210,6 +212,18 @@ export async function installMockSupabase(
         return json(route, 200, { Key: `${kind}/${name}` });
       }
       return route.fulfill({ status: 404 });
+    }
+
+    // ── Edge Functions ────────────────────────────────────
+    const fnMatch = url.pathname.match(/^\/functions\/v1\/([\w-]+)/);
+    if (fnMatch) {
+      const fn = functions[fnMatch[1]];
+      if (!fn) return json(route, 404, { error: `function ${fnMatch[1]} not mocked` });
+      try {
+        return json(route, 200, await fn(req.postDataJSON() ?? {}));
+      } catch (err) {
+        return json(route, 500, { error: (err as Error).message });
+      }
     }
 
     // ── RPC ───────────────────────────────────────────────

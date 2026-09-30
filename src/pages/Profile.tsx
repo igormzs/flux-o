@@ -4,10 +4,10 @@ import { ArrowLeft, Camera, User, SignOut, Trash, Check, CaretRight } from "@pho
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
+import NotificationsCard from "@/components/NotificationsCard";
 import StoredImage from "@/components/StoredImage";
 import { uploadImage } from "@/lib/storage";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { CURRENCIES } from "@/lib/currencies";
 import { useProfile, useSettings, useUpdateProfile, useUpdateSettings } from "@/hooks/useProfile";
@@ -84,9 +84,20 @@ const Profile = () => {
     setUsername(profile.username || "");
   }, [profile]);
 
+  // When saved values change (the profile loads, or another card saves one
+  // setting), update only those fields, keeping any unsaved edits to the rest.
+  const savedSettings = useRef(settings);
   useEffect(() => {
-    setPendingSettings(settings);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when the saved values change
+    const before = savedSettings.current;
+    savedSettings.current = settings;
+    setPendingSettings((pending) => {
+      const next = { ...pending };
+      for (const key of Object.keys(settings) as (keyof Settings)[]) {
+        if (JSON.stringify(before[key]) !== JSON.stringify(settings[key])) Object.assign(next, { [key]: settings[key] });
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs only when the saved values change
   }, [JSON.stringify(settings)]);
 
   const avatarUrl = profile?.avatar_url ?? null;
@@ -126,10 +137,6 @@ const Profile = () => {
 
   const updatePendingSetting = (patch: Partial<Settings>) => {
     setPendingSettings((prev) => ({ ...prev, ...patch }));
-  };
-
-  const updatePendingNotif = (key: keyof Settings["notifications"], val: boolean) => {
-    setPendingSettings((prev) => ({ ...prev, notifications: { ...prev.notifications, [key]: val } }));
   };
 
   const handleSignOut = async () => { await signOut(); };
@@ -341,25 +348,7 @@ const Profile = () => {
         <CaretRight size={18} weight="bold" className="text-muted-foreground shrink-0" />
       </motion.button>
 
-      {/* Notifications */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="glass-card p-4 mb-4">
-        <h3 className="font-display font-bold text-foreground text-sm mb-3">Notifications</h3>
-        <div className="space-y-3">
-          {[
-            { key: "overBudget" as const, label: "Over budget alert", desc: "Notify when you exceed your monthly goal" },
-            { key: "weeklyReport" as const, label: "Weekly report", desc: "Get a summary every Sunday" },
-            { key: "dailyReminder" as const, label: "Daily reminder", desc: "Remind to log expenses" },
-          ].map((item) => (
-            <div key={item.key} className="flex items-center justify-between">
-              <div>
-                <p className="text-foreground text-sm font-medium">{item.label}</p>
-                <p className="text-muted-foreground text-xs">{item.desc}</p>
-              </div>
-              <Switch checked={pendingSettings.notifications[item.key]} onCheckedChange={(val) => updatePendingNotif(item.key, val)} />
-            </div>
-          ))}
-        </div>
-      </motion.div>
+      <NotificationsCard />
 
       {/* Account actions */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-4 space-y-3">

@@ -96,7 +96,7 @@ try {
   await page.getByRole("tab", { name: /Paste/ }).click();
   ok((await smallFields()).length === 0, "Add expenses paste box: no field under 16px");
   await page.goto("/profile");
-  await page.getByText("Notifications").waitFor();
+  await page.getByRole("heading", { name: "Notifications" }).waitFor();
   ok((await smallFields()).length === 0, `Profile: no field under 16px ${JSON.stringify(await smallFields())}`);
   await page.setViewportSize({ width: 1280, height: 900 });
   ok(await page.locator("#cycle-day").evaluate((el) => getComputedStyle(el).fontSize) === "14px", "desktop keeps the compact 14px fields");
@@ -116,7 +116,7 @@ try {
   ok(lightBgNow === await cardBg() && lightBgNow !== darkBg, "colors change in one step (no per-element fade)");
   ok(await page.locator("button").first().evaluate((el) => getComputedStyle(el).transitionDuration !== "0s"), "hover transitions still work afterwards");
   await page.reload();
-  await page.getByText("Notifications").waitFor();
+  await page.getByRole("heading", { name: "Notifications" }).waitFor();
   ok(await page.evaluate(() => document.documentElement.classList.contains("light")), "light theme kept after reload");
   await page.getByRole("button", { name: /Switch to dark theme/ }).click();
   ok(await page.waitForFunction(() => !document.documentElement.classList.contains("light"), null, { timeout: 2000 }).then(() => true, () => false), "switches back to dark");
