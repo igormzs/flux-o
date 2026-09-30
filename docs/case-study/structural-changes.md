@@ -375,3 +375,37 @@ A global rule fades every element's background (0.3 s) and text (0.15 s) separat
 |---|---|---|
 | Unit tests | 106 | 109 |
 | Browser checks | 67 | 89 (+ fixes 22, in WebKit) |
+
+## Notifications
+
+v1 had three notification switches that were saved but never used. The weekly report now works as a push notification. The other two are marked Coming soon.
+
+```mermaid
+flowchart LR
+    subgraph Device
+      T["Profile: Turn on<br/>for this device"] --> P["permission +<br/>pushManager.subscribe<br/>(VAPID public key)"]
+      SW["sw.js<br/>shows it · opens Insights"]
+    end
+    P -- "endpoint + keys<br/>+ time zone" --> DB[("push_subscriptions<br/>profiles.timezone")]
+    C["pg_cron<br/>every hour"] -- "x-cron-secret" --> F["notify<br/>Edge Function"]
+    DB --> F
+    F -- "Monday 9:00 local?<br/>not sent this week?" --> L[("notification_log")]
+    F -- "encrypted (RFC 8291)<br/>signed (VAPID)" --> PS["Apple / Google /<br/>Mozilla push service"]
+    PS --> SW
+```
+
+| Decision | Why | Trade-off accepted |
+|---|---|---|
+| Push, not email | No outside account needed, and friends get it too once they add Flux-o to the Home Screen | iPhone only allows it from the Home Screen app, one device at a time |
+| Encryption and VAPID on Web Crypto | The common `web-push` package relies on Node crypto calls that may not exist in the Edge runtime. Web Crypto is identical in Deno and Node, so the unit tests exercise the same code | About 150 lines to own. Covered by a decrypt round-trip, a signature check and a real delivery through Google in `smoke:push` |
+| Hourly job, "due from 9:00 Monday", log per week | Works in every time zone with one schedule. A missed or failed run is caught up the next hour, and the log stops repeats | Arrives between 9:00 and 9:59 |
+| Secret for the schedule in Vault | Nothing secret is committed. The migration reads the URL and secret at run time | One extra SQL line when setting up |
+| JWT check off for this function | The schedule has no user token. The function checks the cron secret, or the signed-in user, itself | That check lives in the function's code |
+
+### Tests
+
+| | Polish | Notifications |
+|---|---|---|
+| Unit tests | 109 | 118 |
+| Browser checks | 89 | 105 (+ push 16, real Chrome) |
+| Main JS (gzip) | 408 KB | 414 KB |

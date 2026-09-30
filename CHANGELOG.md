@@ -7,6 +7,18 @@ The story behind each change, with before/after screenshots, is in [docs/case-st
 
 ## [Unreleased]
 
+### Added — Notifications
+- Push notifications, turned on per device in Profile → Notifications ("Turn on for this device"). Works on iPhone (iOS 16.4+) when Flux-o is on the Home Screen, and in Chrome, Edge and Firefox. In iPhone Safari the card explains how to add Flux-o to the Home Screen first.
+- The weekly report: Mondays at 9:00 in the user's time zone, with last week's total in the main currency, the change from the week before and the top category. Tapping it opens Insights on that week. Sent once per week, and retried the next hour if nothing got through.
+- "Send a test": a preview of the report on every device the user turned on.
+- The `notify` Edge Function, run hourly by `pg_cron`. Web Push encryption (RFC 8291) and VAPID (RFC 8292) are written on Web Crypto, with no dependency.
+- Migration `20261001100000_push_notifications.sql`: `push_subscriptions`, `notification_log`, `profiles.timezone` and the hourly schedule.
+- `npm run smoke:push`: 16 checks in real Google Chrome, including a notification delivered through Google's push service.
+
+### Changed — Notifications
+- The notification settings save when switched, instead of waiting for the settings Save button. Saving one setting no longer discards unsaved edits to the others.
+- "Over budget alert" and "Daily reminder" are marked Coming soon. They were switches that did nothing.
+
 ### Fixed — Polish after testing
 - Tapping a text field on iPhone no longer zooms the page (iOS Safari zooms into any field under 16px). Fields are 16px on phones and keep their compact size from tablet width up.
 - Switching between light and dark is one cross-fade of the whole page. Before, every element faded its own colors at slightly different speeds, and on iOS the text on the Home card briefly showed boxes of the old theme.
