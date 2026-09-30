@@ -7,6 +7,15 @@ The story behind each change, with before/after screenshots, is in [docs/case-st
 
 ## [Unreleased]
 
+### Added — Budget alert
+- A budget bar on Home's total card: spending against the goal, recurring expenses still to come as a lighter segment, and "On track to go X over" when the two together pass the goal. A goal of 0 hides it.
+- The budget alert (Profile → Notifications, off until switched on): a heads-up when spending plus recurring expenses still to come will pass the goal, and an alert when spending itself passes it. Once each per pay cycle, between 9:00 and 21:00 local time.
+- The server works out the pay cycle (weekend rule and moved paydays included) and "still to come" itself; unit tests compare both with the app's own calculation day by day.
+
+### Changed — Budget alert
+- Profile's "Monthly Budget Goal" is now "Budget goal", with a note that it's counted per pay cycle.
+- v1's stored "over budget" switch is ignored. It was on for every account but never sent anything.
+
 ### Added — Recurring expenses
 - Recurring expenses (Profile → Recurring expenses): rent, utilities and subscriptions set up once with a name, usual amount, day of the month and category. They can be paused or deleted; deleting keeps past expenses.
 - Home shows the ones whose day has come, each with its amount pre-filled from what was paid last time (or the usual amount) and editable. Confirm one, Confirm all, or Skip this month. Nothing is added automatically, and every action has Undo.

@@ -454,3 +454,35 @@ flowchart LR
 | Unit tests | 124 | 136 |
 | Browser checks | 106 | 134 (+ recurring 28) |
 | Main JS (gzip) | 414 KB | 418 KB (the Recurring screen is a separate 4 KB file) |
+
+## Budget alert
+
+v1 stored a budget goal and an "over budget" switch, and used neither: the goal appeared only in Profile, and nothing was ever sent.
+
+| | v1 → recurring expenses | Now |
+|---|---|---|
+| The goal | A number in Profile | A bar on Home: spent, recurring still to come, and the goal |
+| Alert | A switch that did nothing | Two push notifications per pay cycle, each once: "on track to go over" and "over" |
+| Setting | `overBudget`, stored as on for everyone | `budgetAlert`, off until chosen, so nobody is alerted about a goal they never set |
+
+```mermaid
+flowchart LR
+    P["profile<br/>goal · cycle day · weekend rule · moved paydays · time zone"] --> C["cycleRange()<br/>calendar days"]
+    C --> S["spent<br/>expenses in the cycle, main currency"]
+    C --> T["recurringToCome()<br/>unconfirmed bills in the cycle"]
+    S & T --> A{"budgetAlert()"}
+    A -- "spent > goal" --> O["Over budget by X"]
+    A -- "spent + to come > goal" --> F["On track to go over"]
+    O & F -- "9:00–21:00, once per cycle" --> N["push"]
+```
+
+- **Why the server has its own cycle code:** the app's version uses the browser's local time and `date-fns`. The function runs in UTC, so `_shared/budget.ts` works on calendar days ("yyyy-MM-dd") and converts to instants in the user's time zone only to query expenses.
+- **How drift is prevented:** two unit tests run the app's `getCycleRange` and `stillToCome` beside the server's versions for every day of two years (four payday setups) and eleven weeks of bills, and expect identical results.
+- **No database change:** the alert reuses `notification_log` with keys like `2026-09-25:over`.
+
+### Tests
+
+| | Recurring | Budget alert |
+|---|---|---|
+| Unit tests | 136 | 142 |
+| Browser checks | 134 | 138 |
