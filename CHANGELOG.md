@@ -7,6 +7,12 @@ The story behind each change, with before/after screenshots, is in [docs/case-st
 
 ## [Unreleased]
 
+### Added — All expenses
+- An All expenses screen (`/expenses`, from "See all" on Home's Recent Transactions): every expense one calendar month at a time, grouped by day with each day's total. Earlier months via the arrows; the month is kept in the URL.
+- The month's total in the main currency, with other currencies listed apart, and a search over titles and notes in that month.
+- Tapping an expense opens its details, to edit or delete it as from Home.
+- `npm run smoke:expenses`: 15 browser checks.
+
 ### Added — Budget alert
 - A budget bar on Home's total card: spending against the goal, recurring expenses still to come as a lighter segment, and "On track to go X over" when the two together pass the goal. A goal of 0 hides it.
 - The budget alert (Profile → Notifications, off until switched on): a heads-up when spending plus recurring expenses still to come will pass the goal, and an alert when spending itself passes it. Once each per pay cycle, between 9:00 and 21:00 local time.

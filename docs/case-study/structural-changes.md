@@ -486,3 +486,26 @@ flowchart LR
 |---|---|---|
 | Unit tests | 136 | 142 |
 | Browser checks | 134 | 138 |
+
+## All expenses
+
+Home lists the 10 most recent expenses and nothing else, so an expense added in a batch of 40 (Add several) could not be opened again to fix it.
+
+| | Before | Now |
+|---|---|---|
+| Finding an older expense | Not possible past the 10 most recent | "See all" on Home → `/expenses`, one calendar month at a time |
+| Layout | — | Grouped by day with each day's total; the month's total in the main currency, other currencies apart |
+| Finding one in a busy month | — | Search over titles and notes in the month |
+| Editing | From Home's recent list only | Same details sheet, from any month |
+
+- **Calendar month, not pay cycle:** "by month" is how people look an expense up. Pay cycles stay in Home and Insights.
+- **No new query:** the page reuses `useExpenses(range)` with the month as a half-open range, so saving or deleting refreshes it like every other screen.
+- **The month is in the URL** (`?month=2026-08`): it survives an edit, a reload and Back.
+- **Loaded on demand,** like Recurring and Add several.
+
+### Tests
+
+| | Budget alert | All expenses |
+|---|---|---|
+| Unit tests | 142 | 142 |
+| Browser checks | 138 | 153 (+ expenses 15) |
