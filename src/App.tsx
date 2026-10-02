@@ -14,6 +14,7 @@ import Categories from "./pages/Categories";
 // The bulk-add screen (and its parser) loads on demand; most visits never open it.
 const AddExpenses = lazy(() => import("./pages/AddExpenses"));
 const Recurring = lazy(() => import("./pages/Recurring"));
+const Expenses = lazy(() => import("./pages/Expenses"));
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -66,6 +67,7 @@ const AppRoutes = () => {
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
           <Route path="/recurring" element={<ProtectedRoute><Suspense fallback={null}><Recurring /></Suspense></ProtectedRoute>} />
+          <Route path="/expenses" element={<ProtectedRoute><Suspense fallback={null}><Expenses /></Suspense></ProtectedRoute>} />
           <Route path="/add" element={<ProtectedRoute><Suspense fallback={null}><AddExpenses /></Suspense></ProtectedRoute>} />
           <Route path="/settings" element={<Navigate to="/profile" replace />} />
           <Route path="*" element={<NotFound />} />

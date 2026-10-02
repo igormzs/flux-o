@@ -17,7 +17,8 @@
     "smoke:backfill": "node scripts/case-study/smoke-backfill.ts",
     "smoke:fixes": "node scripts/case-study/smoke-fixes.ts",
     "smoke:push": "node scripts/case-study/smoke-push.ts",
-    "smoke:recurring": "node scripts/case-study/smoke-recurring.ts"
+    "smoke:recurring": "node scripts/case-study/smoke-recurring.ts",
+    "smoke:expenses": "node scripts/case-study/smoke-expenses.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

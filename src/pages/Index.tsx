@@ -129,7 +129,12 @@ const Dashboard = () => {
         {/* Side Rail Area */}
         <div className="flex flex-col gap-6">
           <div className="bg-card/40 backdrop-blur-xl border border-glass-border rounded-2xl p-6 shadow-xl shadow-black/5 flex flex-col h-full max-h-[600px]">
-            <h3 className="font-display font-bold text-foreground mb-4 text-sm">Recent Transactions</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display font-bold text-foreground text-sm">Recent Transactions</h3>
+              <Link to="/expenses" data-testid="see-all-expenses" className="text-xs font-medium text-primary hover:underline underline-offset-2">
+                See all
+              </Link>
+            </div>
             {recentExpenses.length === 0 ? (
               <div className="flex-1 flex items-center justify-center text-center py-6">
                 <p className="text-muted-foreground text-sm">No expenses yet. Tap + to add one!</p>
